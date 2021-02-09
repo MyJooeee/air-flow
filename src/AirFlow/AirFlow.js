@@ -7,7 +7,7 @@ export default class AirFlow extends React.Component {
 	constructor(props) {
 		super(props)
 
-		const appKey = ''
+		const appKey = '43cebb6f101584f15a47a1581d009ee7'
 		const url = 'http://api.openweathermap.org/data/2.5/air_pollution?lat=48.856614&lon=2.3522219&appid='
 		this.endpointAPI = url + appKey
 
@@ -26,7 +26,7 @@ export default class AirFlow extends React.Component {
 		this.getAirFlowData()
 		this.line = setInterval(
 			 () => this.getAirFlowData(),
-			 10000
+			 1000*60*5
 		)
 	}
 
