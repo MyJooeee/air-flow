@@ -1,5 +1,6 @@
 import React from 'react'
 import { Line } from 'react-chartjs-2'
+import { css } from '@emotion/css'
 
 export default class AirFlow extends React.Component {
 
@@ -139,11 +140,18 @@ export default class AirFlow extends React.Component {
 	// Renderers ----------------------------------------------------------------
 	render() {
 
+		const container = {
+			display: 'flex',
+			flexWrap: 'wrap',
+			justifyContent: 'space-between',
+			boxSizing: 'border-box'
+		}
+
 		return (
 			<div>
-				<div className='header'>
-					<h1 className='title'>Air quality in Paris </h1>
-					<h2> Quality : {this.airQuality[this.state.indexQuality]} </h2>
+				<div className={css(container)}>
+					<h1 className={css({marginLeft: '5%'})}> Air quality in Paris </h1>
+					<h2 className={css({marginRight: '5%'})}> Quality : {this.airQuality[this.state.indexQuality]} </h2>
 				</div>
 				<Line
 					data={this.getData()}
