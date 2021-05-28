@@ -140,18 +140,27 @@ export default class AirFlow extends React.Component {
 	// Renderers ----------------------------------------------------------------
 	render() {
 
+		// Parent
 		const container = {
 			display: 'flex',
-			flexWrap: 'wrap',
-			justifyContent: 'space-between',
-			boxSizing: 'border-box'
+			// flexFlow: row wrap, correspond à :
+			// flexDirection: 'row' : direction : ligne ou colonne
+			// flewWrap: 'wrap' : bascule en ligne ou colonne si espace insuffisant
+			flexFlow: 'row wrap',
+			alignItems: 'baseline', // ajuste les enfants verticalement sur leur base
+			justifyContent: 'space-around' // ou space-evenly
 		}
+
+		// Enfant
+		// flex : { flex-grow flex-shrink flex-basis }
+		// flex-grow : l'enfant choisi occupe le maximum d'espace
+		// fExemple : flex: 1 1 auto
 
 		return (
 			<div>
 				<div className={css(container)}>
-					<h1 className={css({marginLeft: '5%'})}> Air quality in Paris </h1>
-					<h2 className={css({marginRight: '5%'})}> Quality : {this.airQuality[this.state.indexQuality]} </h2>
+					<h1> Air quality in Paris </h1>
+					<h2> Quality : {this.airQuality[this.state.indexQuality]} </h2>
 				</div>
 				<Line
 					data={this.getData()}
