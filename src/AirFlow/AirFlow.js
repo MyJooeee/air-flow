@@ -1,4 +1,5 @@
 import React from 'react'
+// https://www.npmjs.com/package/react-chartjs-2
 import { Line } from 'react-chartjs-2'
 import { css } from '@emotion/css'
 
@@ -51,28 +52,28 @@ export default class AirFlow extends React.Component {
 					data: this.state.data.co,
 					fill: false,
 					backgroundColor: 'rgb(255, 99, 132)',
-					borderColor: 'rgba(255, 99, 132, 0.2)',
+					borderColor: 'rgba(255, 99, 132, 0.3)',
 				},
 				{
 					label: 'Сoncentration of O3 (Ozone), μg/m3',
 					data: this.state.data.o3,
 					fill: false,
-					backgroundColor: 'rgba(0, 140, 255, 1)',
-					borderColor: 'rgba(0, 140, 255, 1)',
+					backgroundColor: 'rgb(0, 140, 255)',
+					borderColor: 'rgba(0, 140, 255, 0.3)',
 				},
 				{
 					label: 'Сoncentration of SO2 (Sulphur dioxide), μg/m3',
 					data: this.state.data.so2,
 					fill: false,
-					backgroundColor: 'rgba(199, 140, 255, 1)',
-					borderColor: 'rgba(199, 140, 255, 1)',
+					backgroundColor: 'rgb(199, 140, 255)',
+					borderColor: 'rgba(199, 140, 255, 0.3)',
 				},
 				{
 					label: 'Сoncentration of PM2.5 (Fine particles matter), μg/m3',
 					data: this.state.data.pm2_5,
 					fill: false,
-					backgroundColor: 'rgba(67, 245, 123, 0.6)',
-					borderColor: 'rgba(67, 245, 123, 0.6)',
+					backgroundColor: 'rgb(67, 245, 123)',
+					borderColor: 'rgba(67, 245, 123, 0.3)',
 				}
 			]
 		}
@@ -89,6 +90,7 @@ export default class AirFlow extends React.Component {
 					},
 				],
 			},
+			maintainAspectRatio: false
 		}
 	}
 
@@ -163,6 +165,8 @@ export default class AirFlow extends React.Component {
 					<h2> Quality : {this.airQuality[this.state.indexQuality]} </h2>
 				</div>
 				<Line
+					height={550}
+					width={1100}
 					data={this.getData()}
 					options={this.getOptions()}
 				/>
