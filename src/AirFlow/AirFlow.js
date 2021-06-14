@@ -1,6 +1,6 @@
 import React from 'react'
 // https://www.npmjs.com/package/react-chartjs-2
-import { Line } from 'react-chartjs-2'
+import { Line, Doughnut } from 'react-chartjs-2'
 import { css } from '@emotion/css'
 
 export default class AirFlow extends React.Component {
@@ -43,7 +43,7 @@ export default class AirFlow extends React.Component {
 		clearInterval(this.line);
 	}
 
-	getData = () => {
+	getDataLine = () => {
 		return {
 			labels: this.state.label,
 			datasets: [
@@ -79,7 +79,7 @@ export default class AirFlow extends React.Component {
 		}
 	}
 
-	getOptions = () => {
+	getOptionsLine = () => {
 		return {
 			scales: {
 				yAxes: [
@@ -91,6 +91,50 @@ export default class AirFlow extends React.Component {
 				],
 			},
 			maintainAspectRatio: false
+		}
+	}
+
+	getDataDoughnut = () => {
+		let data = [0]
+		let labels = [this.airQuality[this.state.indexQuality]]
+		let backgroundColor = ['rgba(235, 235, 235, 0.2)']
+		let borderColor = ['rgba(255, 255, 255, 1)']
+		if (this.state.indexQuality === 1) {
+			data = [1]
+			backgroundColor = ['rgba(54, 162, 235, 0.2)']
+			borderColor = ['rgba(54, 162, 235, 1)']
+		} else {
+			if (this.state.indexQuality === 2) {
+				data = [4, 1]
+				backgroundColor.unshift('rgba(75, 192, 192, 0.2)')
+				borderColor.unshift('rgba(75, 192, 192, 1)')
+			} else if (this.state.indexQuality === 3) {
+				data = [3, 2]
+				backgroundColor.unshift('rgba(255, 206, 86, 0.2)')
+				borderColor.unshift('rgba(255, 206, 86, 1)')
+			} else if (this.state.indexQuality === 4) {
+				data = [2, 3]
+				backgroundColor.unshift('rgba(255, 159, 64, 0.2)')
+				borderColor.unshift('rgba(255, 159, 64, 1)')
+			} else if (this.state.indexQuality === 5) {
+				data = [1, 4]
+				backgroundColor.unshift('rgba(255, 99, 132, 0.2)')
+				borderColor.unshift('rgba(255, 99, 132, 1)')
+			}
+			labels.push('')
+		}
+
+		return {
+			labels: labels,
+			datasets: [
+				{
+					label: 'Air quality',
+					data: data,
+					backgroundColor: backgroundColor,
+					borderColor: borderColor,
+					borderWidth: 1,
+				},
+			],
 		}
 	}
 
@@ -163,12 +207,18 @@ export default class AirFlow extends React.Component {
 				<div className={css(container)}>
 					<h1> Air quality in Paris </h1>
 					<h2> Quality : {this.airQuality[this.state.indexQuality]} </h2>
+					<Doughnut
+						height={50}
+						width={50}
+						data={this.getDataDoughnut()}
+						options={{ maintainAspectRatio: false }}
+					/>
 				</div>
 				<Line
 					height={550}
 					width={1100}
-					data={this.getData()}
-					options={this.getOptions()}
+					data={this.getDataLine()}
+					options={this.getOptionsLine()}
 				/>
 			</div>
 		)
