@@ -13,11 +13,11 @@ export default class AirFlow extends React.Component {
 		this.endpointAPI = url + appKey
 		this.airQuality = [
 			'loading...',
-			'good',
-			'fair',
-			'moderate',
-			'poor',
-			'very poor'
+			'good quality',
+			'fair quality',
+			'moderate quality',
+			'poor quality',
+			'very poor quality'
 		]
 		this.state = {
 			data: {
@@ -206,7 +206,6 @@ export default class AirFlow extends React.Component {
 			<div>
 				<div className={css(container)}>
 					<h1> Air quality in Paris </h1>
-					<h2> Quality : {this.airQuality[this.state.indexQuality]} </h2>
 					<Doughnut
 						height={50}
 						width={50}
