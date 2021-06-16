@@ -186,6 +186,11 @@ export default class AirFlow extends React.Component {
 	// Renderers ----------------------------------------------------------------
 	render() {
 
+		// https://sevketyalcin.com/blog/responsive-charts-using-Chart.js-and-react-chartjs-2/
+		const canvasContainer = {
+			height: '60vh' // vh : viewport height
+		}
+
 		// Parent
 		const container = {
 			display: 'flex',
@@ -203,7 +208,7 @@ export default class AirFlow extends React.Component {
 		// fExemple : flex: 1 1 auto
 
 		return (
-			<div>
+			<div className={css(canvasContainer)}>
 				<div className={css(container)}>
 					<h1> Air quality in Paris </h1>
 					<Doughnut
