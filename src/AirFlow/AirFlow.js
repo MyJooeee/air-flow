@@ -27,11 +27,27 @@ export default class AirFlow extends React.Component {
 				pm2_5: []
 			},
 			label: [],
-			indexQuality: 0
+			indexQuality: 0,
+			latitude: 'loading...',
+			longitude: 'loading...'
 		}
 	}
 
 	componentDidMount() {
+		if (navigator.geolocation) {
+			navigator.geolocation.watchPosition(
+				(position) => {
+					this.setState({
+						latitude: position.coords.latitude,
+						longitude: position.coords.longitude
+					})
+				},
+				(err) => {
+					console.log(err)
+				}
+			)
+		}
+
 		this.getAirFlowData()
 		this.line = setInterval(
 			() => this.getAirFlowData(),
@@ -224,6 +240,12 @@ export default class AirFlow extends React.Component {
 					data={this.getDataLine()}
 					options={this.getOptionsLine()}
 				/>
+				<p>
+					<small>
+						Longitude : {this.state.longitude},
+						latitude : {this.state.latitude}
+					</small> 
+				</p>
 			</div>
 		)
 	}
