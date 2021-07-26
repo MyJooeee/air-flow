@@ -1,6 +1,6 @@
 import React from 'react'
 // https://www.npmjs.com/package/react-chartjs-2
-import { Line, Doughnut } from 'react-chartjs-2'
+import { Line } from 'react-chartjs-2'
 import { css } from '@emotion/css'
 
 export default class AirFlow extends React.Component {
@@ -9,15 +9,15 @@ export default class AirFlow extends React.Component {
 	constructor(props) {
 		super(props)
 		const appKey = '43cebb6f101584f15a47a1581d009ee7'
-		const url = 'https://api.openweathermap.org/data/2.5/air_pollution?lat=48.856614&lon=2.3522219&appid='
+		const url = 'https://api.openweathermap.org/data/2.5/air_pollution?appid='
 		this.endpointAPI = url + appKey
 		this.airQuality = [
 			'loading...',
-			'good quality',
-			'fair quality',
-			'moderate quality',
-			'poor quality',
-			'very poor quality'
+			'good quality', // 100%
+			'fair quality', // 80 %
+			'moderate quality', // 60%
+			'poor quality', // 40%
+			'very poor quality' // 20%
 		]
 		this.state = {
 			data: {
@@ -28,8 +28,8 @@ export default class AirFlow extends React.Component {
 			},
 			label: [],
 			indexQuality: 0,
-			latitude: 'loading...',
-			longitude: 'loading...'
+			latitude: null,
+			longitude: null
 		}
 	}
 
@@ -110,51 +110,14 @@ export default class AirFlow extends React.Component {
 		}
 	}
 
-	getDataDoughnut = () => {
-		let data = [0]
-		let labels = [this.airQuality[this.state.indexQuality]]
-		let backgroundColor = ['rgba(235, 235, 235, 0.2)']
-		let borderColor = ['rgba(255, 255, 255, 1)']
-		if (this.state.indexQuality === 1) {
-			data = [1]
-			backgroundColor = ['rgba(54, 162, 235, 0.2)']
-			borderColor = ['rgba(54, 162, 235, 1)']
-		} else {
-			if (this.state.indexQuality === 2) {
-				data = [4, 1]
-				backgroundColor.unshift('rgba(75, 192, 192, 0.2)')
-				borderColor.unshift('rgba(75, 192, 192, 1)')
-			} else if (this.state.indexQuality === 3) {
-				data = [3, 2]
-				backgroundColor.unshift('rgba(255, 206, 86, 0.2)')
-				borderColor.unshift('rgba(255, 206, 86, 1)')
-			} else if (this.state.indexQuality === 4) {
-				data = [2, 3]
-				backgroundColor.unshift('rgba(255, 159, 64, 0.2)')
-				borderColor.unshift('rgba(255, 159, 64, 1)')
-			} else if (this.state.indexQuality === 5) {
-				data = [1, 4]
-				backgroundColor.unshift('rgba(255, 99, 132, 0.2)')
-				borderColor.unshift('rgba(255, 99, 132, 1)')
-			}
-			labels.push('')
-		}
-
-		return {
-			labels: labels,
-			datasets: [
-				{
-					label: 'Air quality',
-					data: data,
-					backgroundColor: backgroundColor,
-					borderColor: borderColor,
-					borderWidth: 1,
-				},
-			],
-		}
-	}
-
 	getAirFlowData = () => {
+
+		this.endpointAPI += (
+			!this.state.longitude && !this.state.latitude
+			? '&lat=48.856614&lon=2.3522219'
+			: '&lat:'+this.state.latitude+'&lon='+this.state.latitude
+		)
+
 		fetch(this.endpointAPI)
 		.then(res => res.json())
 		.then(
@@ -199,6 +162,24 @@ export default class AirFlow extends React.Component {
 		)
 	}
 
+	renderTitle = () => {
+		if (!this.state.longitude && !this.state.latitude) return 'Air Quality in Paris'
+		return 'Air Quality around you'
+	}
+
+	renderLocation = () => {
+		if (!this.state.longitude && !this.state.latitude) return null
+		return (
+			<React.Fragment>
+				<p> Your location </p>
+				<small>
+					Longitude : {this.state.longitude},
+					latitude : {this.state.latitude}.
+				</small>
+			</React.Fragment>
+		)
+	}
+
 	// Renderers ----------------------------------------------------------------
 	render() {
 
@@ -221,18 +202,16 @@ export default class AirFlow extends React.Component {
 		// Enfant
 		// flex : { flex-grow flex-shrink flex-basis }
 		// flex-grow : l'enfant choisi occupe le maximum d'espace
-		// fExemple : flex: 1 1 auto
+		// Exemple : flex: 1 1 auto
+
+		let airQuality = 'Quality : '+this.airQuality[this.state.indexQuality]
+		airQuality += (this.state.indexQuality !== 0) ? ' ('+((6-this.state.indexQuality)/5)*100+'%)': ''
 
 		return (
 			<div className={css(canvasContainer)}>
 				<div className={css(container)}>
-					<h1> Air quality in Paris </h1>
-					<Doughnut
-						height={50}
-						width={50}
-						data={this.getDataDoughnut()}
-						options={{ maintainAspectRatio: false }}
-					/>
+					<h1> {this.renderTitle()} </h1>
+					<h2> {airQuality} </h2>
 				</div>
 				<Line
 					height={550}
@@ -240,12 +219,7 @@ export default class AirFlow extends React.Component {
 					data={this.getDataLine()}
 					options={this.getOptionsLine()}
 				/>
-				<p>
-					<small>
-						Longitude : {this.state.longitude},
-						latitude : {this.state.latitude}
-					</small> 
-				</p>
+				{this.renderLocation()}
 			</div>
 		)
 	}
