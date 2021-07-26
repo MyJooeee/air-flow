@@ -49,6 +49,7 @@ export default class AirFlow extends React.Component {
 		}
 
 		this.getAirFlowData()
+
 		this.line = setInterval(
 			() => this.getAirFlowData(),
 			1000*60*5
@@ -112,13 +113,13 @@ export default class AirFlow extends React.Component {
 
 	getAirFlowData = () => {
 
-		this.endpointAPI += (
-			!this.state.longitude && !this.state.latitude
+		const url = this.endpointAPI + (
+			!this.state.latitude && !this.state.longitude
 			? '&lat=48.856614&lon=2.3522219'
-			: '&lat:'+this.state.latitude+'&lon='+this.state.latitude
+			: '&lat='+this.state.latitude+'&lon='+this.state.longitude
 		)
 
-		fetch(this.endpointAPI)
+		fetch(url)
 		.then(res => res.json())
 		.then(
 			(result) => {
