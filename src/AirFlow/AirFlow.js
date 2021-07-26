@@ -35,20 +35,22 @@ export default class AirFlow extends React.Component {
 
 	componentDidMount() {
 		if (navigator.geolocation) {
-			navigator.geolocation.watchPosition(
+			// Position de l'utilisateur en temps réel
+			// navigator.geolocation.watchPosition(
+			// Position de l'utilisateur au premier lancement
+			navigator.geolocation.getCurrentPosition(
 				(position) => {
 					this.setState({
 						latitude: position.coords.latitude,
 						longitude: position.coords.longitude
-					})
+					}, () => this.getAirFlowData())
 				},
 				(err) => {
+					this.getAirFlowData()
 					console.log(err)
 				}
 			)
 		}
-
-		this.getAirFlowData()
 
 		this.line = setInterval(
 			() => this.getAirFlowData(),
