@@ -9,8 +9,9 @@ export default class AirFlow extends React.Component {
 	constructor(props) {
 		super(props)
 		const appKey = '43cebb6f101584f15a47a1581d009ee7'
-		const url = 'https://api.openweathermap.org/data/2.5/air_pollution?appid='
-		this.endpointAPI = url + appKey
+		this.airQualityAPI = 'https://api.openweathermap.org/data/2.5/air_pollution?appid=' + appKey
+		this.reverseLocationAPI = 'https://api.openweathermap.org/geo/1.0/reverse?limit=2&appid=' + appKey
+
 		this.airQuality = [
 			'loading...',
 			'good quality', // 100%
@@ -29,7 +30,8 @@ export default class AirFlow extends React.Component {
 			label: [],
 			indexQuality: 0,
 			latitude: null,
-			longitude: null
+			longitude: null,
+			nameLocation: null
 		}
 	}
 
@@ -43,8 +45,10 @@ export default class AirFlow extends React.Component {
 					this.setState({
 						latitude: position.coords.latitude,
 						longitude: position.coords.longitude
-					}, () => this.getAirFlowData())
-				},
+					}, () => {
+						this.getAirFlowData()
+						this.getNameLocation()
+					})},
 				(err) => {
 					this.getAirFlowData()
 					console.log(err)
@@ -62,6 +66,7 @@ export default class AirFlow extends React.Component {
 		clearInterval(this.line);
 	}
 
+// Functions ----------------------------------------------------------------
 	getDataLine = () => {
 		return {
 			labels: this.state.label,
@@ -115,7 +120,7 @@ export default class AirFlow extends React.Component {
 
 	getAirFlowData = () => {
 
-		const url = this.endpointAPI + (
+		const url = this.airQualityAPI + (
 			!this.state.latitude && !this.state.longitude
 			? '&lat=48.856614&lon=2.3522219'
 			: '&lat='+this.state.latitude+'&lon='+this.state.longitude
@@ -165,34 +170,35 @@ export default class AirFlow extends React.Component {
 		)
 	}
 
-	renderTitle = () => {
-		if (!this.state.longitude && !this.state.latitude) return 'Air Quality in Paris'
-		return 'Air Quality around you'
-	}
-
-	renderLocation = () => {
-		if (!this.state.longitude && !this.state.latitude) return null
-		return (
-			<React.Fragment>
-				<p> Your location </p>
-				<small>
-					Longitude : {this.state.longitude},
-					latitude : {this.state.latitude}.
-				</small>
-			</React.Fragment>
+	getNameLocation = () => {
+		if (!this.state.longitude && !this.state.latitude) return false
+		const url = this.reverseLocationAPI + '&lat='+this.state.latitude+'&lon='+this.state.longitude
+		fetch(url)
+		.then(res => res.json())
+		.then(
+			(result) => {
+				this.setState({ nameLocation: result[1].name })
+			},
+			(error) => {
+				console.log(error)
+			}
 		)
 	}
 
 	// Renderers ----------------------------------------------------------------
-	render() {
+	renderTitle = () => {
+		if (!this.state.nameLocation) return 'Air Quality in Paris'
+		return 'Air quality in ' + this.state.nameLocation
+	}
 
+	render() {
 		// https://sevketyalcin.com/blog/responsive-charts-using-Chart.js-and-react-chartjs-2/
 		const canvasContainer = {
 			height: '60vh' // vh : viewport height
 		}
 
 		// Parent
-		const container = {
+		const topContainer = {
 			display: 'flex',
 			// flexFlow: row wrap, correspond à :
 			// flexDirection: 'row' : direction : ligne ou colonne
@@ -200,6 +206,11 @@ export default class AirFlow extends React.Component {
 			flexFlow: 'row wrap',
 			alignItems: 'baseline', // ajuste les enfants verticalement sur leur base
 			justifyContent: 'space-around' // ou space-evenly
+		}
+
+		const bottomContainer = {
+			display: 'flex',
+			justifyContent: 'center'
 		}
 
 		// Enfant
@@ -212,7 +223,7 @@ export default class AirFlow extends React.Component {
 
 		return (
 			<div className={css(canvasContainer)}>
-				<div className={css(container)}>
+				<div className={css(topContainer)}>
 					<h1> {this.renderTitle()} </h1>
 					<h2> {airQuality} </h2>
 				</div>
@@ -222,7 +233,11 @@ export default class AirFlow extends React.Component {
 					data={this.getDataLine()}
 					options={this.getOptionsLine()}
 				/>
-				{this.renderLocation()}
+				<div className={css(bottomContainer)}>
+					<small>
+						Auto refresh data air quality <strong> every 5 minutes</strong>.
+					</small>
+				</div>
 			</div>
 		)
 	}
