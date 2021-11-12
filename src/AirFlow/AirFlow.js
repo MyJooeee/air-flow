@@ -11,6 +11,8 @@ export default class AirFlow extends React.Component {
 		const appKey = '43cebb6f101584f15a47a1581d009ee7'
 		this.airQualityAPI = 'https://api.openweathermap.org/data/2.5/air_pollution?appid=' + appKey
 		this.reverseLocationAPI = 'https://api.openweathermap.org/geo/1.0/reverse?limit=2&appid=' + appKey
+		this.weatherFromLocationAPI = 'https://api.openweathermap.org/data/2.5/weather?&units=metric&appid=' + appKey
+
 
 		this.airQuality = [
 			'loading...',
@@ -31,7 +33,8 @@ export default class AirFlow extends React.Component {
 			indexQuality: 0,
 			latitude: null,
 			longitude: null,
-			nameLocation: null
+			nameLocation: null,
+			weatherLocation: null
 		}
 	}
 
@@ -48,16 +51,21 @@ export default class AirFlow extends React.Component {
 					}, () => {
 						this.getAirFlowData()
 						this.getNameLocation()
+						this.getWeatherLocation()
 					})},
 				(err) => {
 					this.getAirFlowData()
+					this.getWeatherLocation()
 					console.log(err)
 				}
 			)
 		}
 
 		this.line = setInterval(
-			() => this.getAirFlowData(),
+			() => {
+				this.getAirFlowData()
+				this.getWeatherLocation()
+			},
 			1000*60*5
 		)
 	}
@@ -185,10 +193,63 @@ export default class AirFlow extends React.Component {
 		)
 	}
 
+	getWeatherLocation = () => {
+		const url = this.weatherFromLocationAPI + (
+			!this.state.latitude && !this.state.longitude
+			? '&lat=48.856614&lon=2.3522219'
+			: '&lat='+this.state.latitude+'&lon='+this.state.longitude
+		)
+		fetch(url)
+		.then(res => res.json())
+		.then(
+			(result) => {
+				const weather = {
+					main: result.weather[0].main,
+					description: result.weather[0].description,
+					icon: result.weather[0].icon,
+					temperature: result.main.temp,
+					humidity: result.main.humidity,
+				}
+				this.setState({ weatherLocation: weather })
+			},
+			(error) => {
+				console.log(error)
+			}
+		)
+	}
+
 	// Renderers ----------------------------------------------------------------
 	renderTitle = () => {
 		if (!this.state.nameLocation) return 'Air Quality in Paris'
 		return 'Air quality in ' + this.state.nameLocation
+	}
+
+	renderAirQuality = () => {
+		let airQuality = 'Quality : '+this.airQuality[this.state.indexQuality]
+		return airQuality += (this.state.indexQuality !== 0) ? ' ('+((6-this.state.indexQuality)/5)*100+'%)': ''
+	}
+
+	renderWeather = () => {
+		if (!this.state.weatherLocation) return null
+		const imgSrc = "https://openweathermap.org/img/wn/"+this.state.weatherLocation.icon+".png"
+		const title = this.state.weatherLocation.main
+		const description = this.state.weatherLocation.description
+		const alt = this.state.weatherLocation.icon
+		const temperature = this.state.weatherLocation.temperature
+		const humidity = this.state.weatherLocation.humidity
+		const container = {
+			display: 'flex',
+			flexFlow: 'row wrap',
+			alignItems: 'center'
+		}
+		return (
+			<div className={css(container)}>
+				<img src={imgSrc} title={title} alt={alt}/>
+				<span className={css({fontSize: '1.2rem'})}> {temperature} °C. | {humidity} %</span>
+				<span className={css({fontSize: '1rem', marginLeft: '5px'})}> {description} </span>
+			</div>
+		)
+
 	}
 
 	render() {
@@ -218,14 +279,12 @@ export default class AirFlow extends React.Component {
 		// flex-grow : l'enfant choisi occupe le maximum d'espace
 		// Exemple : flex: 1 1 auto
 
-		let airQuality = 'Quality : '+this.airQuality[this.state.indexQuality]
-		airQuality += (this.state.indexQuality !== 0) ? ' ('+((6-this.state.indexQuality)/5)*100+'%)': ''
-
 		return (
 			<div className={css(canvasContainer)}>
 				<div className={css(topContainer)}>
 					<h1> {this.renderTitle()} </h1>
-					<h2> {airQuality} </h2>
+					<h2> {this.renderAirQuality()} </h2>
+					<h2> {this.renderWeather()} </h2>
 				</div>
 				<Line
 					height={550}
