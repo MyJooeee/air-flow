@@ -245,7 +245,7 @@ export default class AirFlow extends React.Component {
 		return (
 			<div className={css(container)}>
 				<img src={imgSrc} title={title} alt={alt}/>
-				<span className={css({fontSize: '1.2rem'})}> {temperature} °C. | {humidity} %</span>
+				<span className={css({fontSize: '1.2rem'})}> {temperature}°C. | {humidity}%</span>
 				<span className={css({fontSize: '1rem', marginLeft: '5px'})}> {description} </span>
 			</div>
 		)
@@ -265,7 +265,7 @@ export default class AirFlow extends React.Component {
 			// flexDirection: 'row' : direction : ligne ou colonne
 			// flewWrap: 'wrap' : bascule en ligne ou colonne si espace insuffisant
 			flexFlow: 'row wrap',
-			alignItems: 'baseline', // ajuste les enfants verticalement sur leur base
+			alignItems: 'center', // baseline : ajuste les enfants verticalement sur leur base
 			justifyContent: 'space-around' // ou space-evenly
 		}
 
