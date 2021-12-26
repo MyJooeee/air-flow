@@ -10,7 +10,7 @@ export default class AirFlow extends React.Component {
 		super(props)
 		const appKey = '43cebb6f101584f15a47a1581d009ee7'
 		this.airQualityAPI = 'https://api.openweathermap.org/data/2.5/air_pollution?appid=' + appKey
-		this.reverseLocationAPI = 'https://api.openweathermap.org/geo/1.0/reverse?limit=2&appid=' + appKey
+		this.reverseLocationAPI = 'https://api.openweathermap.org/geo/1.0/reverse?limit=1&appid=' + appKey
 		this.weatherFromLocationAPI = 'https://api.openweathermap.org/data/2.5/weather?&units=metric&appid=' + appKey
 
 
@@ -185,7 +185,8 @@ export default class AirFlow extends React.Component {
 		.then(res => res.json())
 		.then(
 			(result) => {
-				this.setState({ nameLocation: result[1].name })
+				console.log(result);
+				this.setState({ nameLocation: result[0].name })
 			},
 			(error) => {
 				console.log(error)
