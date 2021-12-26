@@ -185,7 +185,6 @@ export default class AirFlow extends React.Component {
 		.then(res => res.json())
 		.then(
 			(result) => {
-				console.log(result);
 				this.setState({ nameLocation: result[0].name })
 			},
 			(error) => {
