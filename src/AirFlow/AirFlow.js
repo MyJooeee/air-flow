@@ -2,6 +2,7 @@ import React from 'react'
 // https://www.npmjs.com/package/react-chartjs-2
 import { Line } from 'react-chartjs-2'
 import { css } from '@emotion/css'
+import { Leaflet } from '../Leaflet/index.js'
 
 export default class AirFlow extends React.Component {
 
@@ -31,8 +32,8 @@ export default class AirFlow extends React.Component {
 			},
 			label: [],
 			indexQuality: 0,
-			latitude: null,
-			longitude: null,
+			latitude: 0,
+			longitude: 0,
 			nameLocation: null,
 			weatherLocation: null
 		}
@@ -285,6 +286,7 @@ export default class AirFlow extends React.Component {
 					<h1> {this.renderTitle()} </h1>
 					<h2> {this.renderAirQuality()} </h2>
 					<h2> {this.renderWeather()} </h2>
+					<Leaflet coordinates={[this.state.latitude, this.state.longitude]} />
 				</div>
 				<Line
 					height={550}
