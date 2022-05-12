@@ -32,8 +32,8 @@ export default class AirFlow extends React.Component {
 			},
 			label: [],
 			indexQuality: 0,
-			latitude: 0,
-			longitude: 0,
+			latitude: 48.856614,
+			longitude: 2.3522219,
 			nameLocation: null,
 			weatherLocation: null
 		}
@@ -130,7 +130,7 @@ export default class AirFlow extends React.Component {
 	getAirFlowData = () => {
 
 		const url = this.airQualityAPI + (
-			!this.state.latitude && !this.state.longitude
+			this.state.latitude === 48.856614 && this.state.longitude === 2.3522219
 			? '&lat=48.856614&lon=2.3522219'
 			: '&lat='+this.state.latitude+'&lon='+this.state.longitude
 		)
@@ -180,7 +180,7 @@ export default class AirFlow extends React.Component {
 	}
 
 	getNameLocation = () => {
-		if (!this.state.longitude && !this.state.latitude) return false
+		if (this.state.latitude === 48.856614 && this.state.longitude === 2.3522219) return false
 		const url = this.reverseLocationAPI + '&lat='+this.state.latitude+'&lon='+this.state.longitude
 		fetch(url)
 		.then(res => res.json())
@@ -196,7 +196,7 @@ export default class AirFlow extends React.Component {
 
 	getWeatherLocation = () => {
 		const url = this.weatherFromLocationAPI + (
-			!this.state.latitude && !this.state.longitude
+			this.state.latitude === 48.856614 && this.state.longitude === 2.3522219
 			? '&lat=48.856614&lon=2.3522219'
 			: '&lat='+this.state.latitude+'&lon='+this.state.longitude
 		)
