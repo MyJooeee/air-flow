@@ -32,6 +32,7 @@ export default class AirFlow extends React.Component {
 			},
 			label: [],
 			indexQuality: 0,
+      // Paris by default
 			latitude: 48.856614,
 			longitude: 2.3522219,
 			nameLocation: null,
@@ -129,11 +130,7 @@ export default class AirFlow extends React.Component {
 
 	getAirFlowData = () => {
 
-		const url = this.airQualityAPI + (
-			this.state.latitude === 48.856614 && this.state.longitude === 2.3522219
-			? '&lat=48.856614&lon=2.3522219'
-			: '&lat='+this.state.latitude+'&lon='+this.state.longitude
-		)
+		const url = this.airQualityAPI + '&lat='+this.state.latitude+'&lon='+this.state.longitude
 
 		fetch(url)
 		.then(res => res.json())
@@ -180,7 +177,6 @@ export default class AirFlow extends React.Component {
 	}
 
 	getNameLocation = () => {
-		if (this.state.latitude === 48.856614 && this.state.longitude === 2.3522219) return false
 		const url = this.reverseLocationAPI + '&lat='+this.state.latitude+'&lon='+this.state.longitude
 		fetch(url)
 		.then(res => res.json())
@@ -195,11 +191,7 @@ export default class AirFlow extends React.Component {
 	}
 
 	getWeatherLocation = () => {
-		const url = this.weatherFromLocationAPI + (
-			this.state.latitude === 48.856614 && this.state.longitude === 2.3522219
-			? '&lat=48.856614&lon=2.3522219'
-			: '&lat='+this.state.latitude+'&lon='+this.state.longitude
-		)
+		const url = this.weatherFromLocationAPI + '&lat='+this.state.latitude+'&lon='+this.state.longitude
 		fetch(url)
 		.then(res => res.json())
 		.then(
