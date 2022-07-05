@@ -14,10 +14,10 @@ export default function Leaflet({coordinates}) {
 	return (
 			<MapContainer
 		      id="mapId"
-			  center={coordinates}
+			    center={coordinates}
 		      zoom={14}
 		      scrollWheelZoom={false}
-		      style={{ height: 180, width: 180, margin: 'auto'}}
+		      style={{ height: 180, width: 180, margin: '20px'}}
 		    >
 				 <ChangeView center={coordinates} zoom={14} />
 			      <TileLayer
