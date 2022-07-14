@@ -275,7 +275,7 @@ export default class AirFlow extends React.Component {
 		return (
 			<div className={css(canvasContainer)}>
 				<div className={css(topContainer)}>
-					<h1> {this.renderTitle()} </h1>
+					<h1 className={css({ textAlign: 'center' })}> {this.renderTitle()} </h1>
 					<h2> {this.renderAirQuality()} </h2>
 					<h2> {this.renderWeather()} </h2>
 					<Leaflet coordinates={[this.state.latitude, this.state.longitude]} />
