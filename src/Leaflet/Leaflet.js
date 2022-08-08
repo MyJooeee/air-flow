@@ -3,13 +3,16 @@ import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import markerIconPng from "leaflet/dist/images/marker-icon.png"
 import {Icon} from 'leaflet'
 
-export default function Leaflet({coordinates}) {
+export default function Leaflet({ coordinates, altitude }) {
 
 	function ChangeView({ center, zoom }) {
 		const map = useMap();
 		map.setView(center, zoom);
 		return null;
 	 }
+
+	 let textPosition = 'Here';
+	 if (altitude) textPosition += ', alt. '+altitude+'m';
 
 	return (
 			<MapContainer
@@ -26,7 +29,7 @@ export default function Leaflet({coordinates}) {
 			      />
 				  <Marker position={coordinates} icon={new Icon({iconUrl: markerIconPng, iconSize: [25, 41], iconAnchor: [12, 41]})}>
 			      <Popup>
-			        Position
+			        {textPosition}
 			      </Popup>
 			    </Marker>
 		    </MapContainer>

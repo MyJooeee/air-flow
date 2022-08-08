@@ -32,9 +32,10 @@ export default class AirFlow extends React.Component {
 			},
 			label: [],
 			indexQuality: 0,
-      // Paris by default
+			// Paris by default
 			latitude: 48.856614,
 			longitude: 2.3522219,
+			altitude: 35,
 			nameLocation: null,
 			weatherLocation: null
 		}
@@ -42,6 +43,11 @@ export default class AirFlow extends React.Component {
 
 	componentDidMount() {
 		if (navigator.geolocation) {
+			const options = {
+				  enableHighAccuracy: true,
+				  timeout: 5000,
+				  maximumAge: 0
+			};
 			// Position de l'utilisateur en temps réel
 			// navigator.geolocation.watchPosition(
 			// Position de l'utilisateur au premier lancement
@@ -49,7 +55,8 @@ export default class AirFlow extends React.Component {
 				(position) => {
 					this.setState({
 						latitude: position.coords.latitude,
-						longitude: position.coords.longitude
+						longitude: position.coords.longitude,
+						altitude: position.coords.altitude
 					}, () => {
 						this.getAirFlowData()
 						this.getNameLocation()
@@ -59,7 +66,8 @@ export default class AirFlow extends React.Component {
 					this.getAirFlowData()
 					this.getWeatherLocation()
 					console.log(err)
-				}
+				},
+				options
 			)
 		}
 
@@ -278,7 +286,7 @@ export default class AirFlow extends React.Component {
 					<h1 className={css({ textAlign: 'center' })}> {this.renderTitle()} </h1>
 					<h2> {this.renderAirQuality()} </h2>
 					<h2> {this.renderWeather()} </h2>
-					<Leaflet coordinates={[this.state.latitude, this.state.longitude]} />
+					<Leaflet coordinates={[this.state.latitude, this.state.longitude]} altitude={this.state.altitude}/>
 				</div>
 				<Line
 					height={550}
