@@ -12,7 +12,7 @@ export default function Leaflet({ coordinates, altitude }) {
 	 }
 
 	 let textPosition = 'Here';
-	 if (altitude) textPosition += ', alt. '+altitude+'m';
+	 if (altitude) textPosition += ', alt. '+altitude.toFixed(2)+'m';
 
 	return (
 			<MapContainer
