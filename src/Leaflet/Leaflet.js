@@ -11,8 +11,13 @@ export default function Leaflet({ coordinates, altitude }) {
 		return null;
 	 }
 
-	 let textPosition = 'Here';
-	 if (altitude) textPosition += ', alt. '+altitude.toFixed(2)+'m';
+	 let popup = null;
+	 if (altitude)
+   popup = (
+     <Popup>
+       {`alt. ${altitude.toFixed(2)}m`}
+     </Popup>
+   )
 
 	return (
 			<MapContainer
@@ -28,9 +33,7 @@ export default function Leaflet({ coordinates, altitude }) {
 			        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 			      />
 				  <Marker position={coordinates} icon={new Icon({iconUrl: markerIconPng, iconSize: [25, 41], iconAnchor: [12, 41]})}>
-			      <Popup>
-			        {textPosition}
-			      </Popup>
+			      {popup}
 			    </Marker>
 		    </MapContainer>
 	);
