@@ -3,6 +3,7 @@ import React from 'react'
 import { Line } from 'react-chartjs-2'
 import { css } from '@emotion/css'
 import { Leaflet } from '../Leaflet/index.js'
+import moment from 'moment';
 
 export default class AirFlow extends React.Component {
 
@@ -24,6 +25,7 @@ export default class AirFlow extends React.Component {
 			'very poor quality' // 20%
 		]
 		this.state = {
+      refreshAt: moment().format('hh:mm:ss'),
 			data: {
 				co: [],
 				o3: [],
@@ -58,13 +60,11 @@ export default class AirFlow extends React.Component {
 						longitude: position.coords.longitude,
 						altitude: position.coords.altitude
 					}, () => {
-						this.getAirFlowData()
-						this.getNameLocation()
-						this.getWeatherLocation()
+						this.getData()
 					})},
 				(err) => {
-					this.getAirFlowData()
-					this.getWeatherLocation()
+          // Service location denied by user
+          this.getData()
 					console.log(err)
 				},
 				options
@@ -73,6 +73,7 @@ export default class AirFlow extends React.Component {
 
 		this.line = setInterval(
 			() => {
+        this.setState({ refreshAt: moment().format('hh:mm:ss')})
 				this.getAirFlowData()
 				this.getWeatherLocation()
 			},
@@ -85,6 +86,13 @@ export default class AirFlow extends React.Component {
 	}
 
 // Functions ----------------------------------------------------------------
+
+  getData = () => {
+    this.getAirFlowData()
+    this.getNameLocation()
+    this.getWeatherLocation()
+  }
+
 	getDataLine = () => {
 		return {
 			labels: this.state.label,
@@ -221,7 +229,7 @@ export default class AirFlow extends React.Component {
 
 	// Renderers ----------------------------------------------------------------
 	renderTitle = () => {
-		if (!this.state.nameLocation) return 'Air Quality in Paris'
+		if (!this.state.nameLocation) return 'Loading...'
 		return 'Air quality in ' + this.state.nameLocation
 	}
 
@@ -296,7 +304,7 @@ export default class AirFlow extends React.Component {
 				/>
 				<div className={css(bottomContainer)}>
 					<small>
-						Auto refresh data air quality <strong> every 5 minutes</strong>.
+						Auto refresh data air quality <strong> every 5 minutes</strong> <i> ({this.state.refreshAt}). </i>
 					</small>
 				</div>
 			</div>
