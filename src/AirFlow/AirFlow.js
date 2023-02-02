@@ -25,7 +25,7 @@ export default class AirFlow extends React.Component {
 			'very poor quality' // 20%
 		]
 		this.state = {
-      refreshAt: moment().format('hh:mm:ss'),
+      refreshAt: moment().format('HH:mm:ss'),
 			data: {
 				co: [],
 				o3: [],
@@ -73,7 +73,7 @@ export default class AirFlow extends React.Component {
 
 		this.line = setInterval(
 			() => {
-        this.setState({ refreshAt: moment().format('hh:mm:ss')})
+        this.setState({ refreshAt: moment().format('HH:mm:ss')})
 				this.getAirFlowData()
 				this.getWeatherLocation()
 			},
