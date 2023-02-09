@@ -17,7 +17,6 @@ export default class AirFlow extends React.Component {
 
 
 		this.airQuality = [
-			'loading...',
 			'good quality', // 100%
 			'fair quality', // 80 %
 			'moderate quality', // 60%
@@ -25,7 +24,6 @@ export default class AirFlow extends React.Component {
 			'very poor quality' // 20%
 		]
 		this.state = {
-      refreshAt: moment().format('HH:mm:ss'),
 			data: {
 				co: [],
 				o3: [],
@@ -38,8 +36,11 @@ export default class AirFlow extends React.Component {
 			latitude: 48.856614,
 			longitude: 2.3522219,
 			altitude: 35,
-			nameLocation: null,
-			weatherLocation: null
+			nameLocation: 'Paris',
+			weatherLocation: null,
+      loadingAirData: true,
+      loadingNameLocation: true,
+      loadingWeather: true
 		}
 	}
 
@@ -60,11 +61,15 @@ export default class AirFlow extends React.Component {
 						longitude: position.coords.longitude,
 						altitude: position.coords.altitude
 					}, () => {
-						this.getData()
+            this.getAirFlowData()
+            this.getNameLocation()
+            this.getWeatherLocation()
 					})},
 				(err) => {
           // Service location denied by user
-          this.getData()
+          this.setState({loadingNameLocation: false});
+          this.getAirFlowData()
+          this.getWeatherLocation()
 					console.log(err)
 				},
 				options
@@ -86,13 +91,6 @@ export default class AirFlow extends React.Component {
 	}
 
 // Functions ----------------------------------------------------------------
-
-  getData = () => {
-    this.getAirFlowData()
-    this.getNameLocation()
-    this.getWeatherLocation()
-  }
-
 	getDataLine = () => {
 		return {
 			labels: this.state.label,
@@ -144,10 +142,9 @@ export default class AirFlow extends React.Component {
 		}
 	}
 
+// API calls ----------------------------------------------------------------
 	getAirFlowData = () => {
-
 		const url = this.airQualityAPI + '&lat='+this.state.latitude+'&lon='+this.state.longitude
-
 		fetch(url)
 		.then(res => res.json())
 		.then(
@@ -183,7 +180,8 @@ export default class AirFlow extends React.Component {
 				this.setState({
 					data : data,
 					label: label,
-					indexQuality: indexQuality
+					indexQuality: indexQuality,
+          loadingAirData: false
 				})
 			},
 			(error) => {
@@ -198,7 +196,7 @@ export default class AirFlow extends React.Component {
 		.then(res => res.json())
 		.then(
 			(result) => {
-				this.setState({ nameLocation: result[0].name })
+				this.setState({ nameLocation: result[0].name, loadingNameLocation: false })
 			},
 			(error) => {
 				console.log(error)
@@ -219,7 +217,7 @@ export default class AirFlow extends React.Component {
 					temperature: result.main.temp,
 					humidity: result.main.humidity,
 				}
-				this.setState({ weatherLocation: weather })
+				this.setState({ weatherLocation: weather, loadingWeather: false })
 			},
 			(error) => {
 				console.log(error)
@@ -227,19 +225,23 @@ export default class AirFlow extends React.Component {
 		)
 	}
 
-	// Renderers ----------------------------------------------------------------
+	// Components ----------------------------------------------------------------
 	renderTitle = () => {
-		if (!this.state.nameLocation) return 'Loading...'
-		return 'Air quality in ' + this.state.nameLocation
+    const title = 'Air quality in'
+		if (this.state.loadingNameLocation) return `${title} loading...`
+		return `${title} ${this.state.nameLocation}`
 	}
 
 	renderAirQuality = () => {
-		let airQuality = 'Quality : '+this.airQuality[this.state.indexQuality]
+    const quality = 'Quality :'
+    if (this.state.loadingAirData) return `${quality} loading...`
+    console.log(this.state.indexQuality);
+		let airQuality = `${quality} ${this.airQuality[this.state.indexQuality-1]}`
 		return airQuality += (this.state.indexQuality !== 0) ? ' ('+((6-this.state.indexQuality)/5)*100+'%)': ''
 	}
 
 	renderWeather = () => {
-		if (!this.state.weatherLocation) return null
+		if (this.state.loadingWeather) return null
 		const imgSrc = "https://openweathermap.org/img/wn/"+this.state.weatherLocation.icon+".png"
 		const title = this.state.weatherLocation.main
 		const description = this.state.weatherLocation.description
@@ -304,7 +306,7 @@ export default class AirFlow extends React.Component {
 				/>
 				<div className={css(bottomContainer)}>
 					<small>
-						Auto refresh data air quality <strong> every 5 minutes</strong> <i> ({this.state.refreshAt}). </i>
+						Auto refresh data air quality <strong> every 5 minutes</strong>.
 					</small>
 				</div>
 			</div>
