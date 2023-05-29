@@ -8,13 +8,13 @@
       "type": "image/x-icon"
     },
     {
-      "src": "AirFlowAnim192.gif",
-      "type": "image/gif",
+      "src": "AirFlow192.png",
+      "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "AirFlowAnim512.gif",
-      "type": "image/gif",
+      "src": "AirFlow512.png",
+      "type": "image/png",
       "sizes": "512x512"
     }
   ],
