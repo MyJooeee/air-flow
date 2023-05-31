@@ -1,50 +1,40 @@
-import React from 'react'
+import { useEffect, useState } from 'react';
 // https://www.npmjs.com/package/react-chartjs-2
 import { Line } from 'react-chartjs-2'
 import { css } from '@emotion/css'
 import { Leaflet } from '../Leaflet/index.js'
-import moment from 'moment';
 
-export default class AirFlow extends React.Component {
+export default function AirFlow() {
+	const appKey = '43cebb6f101584f15a47a1581d009ee7';
+	const airQualityAPI = 'https://api.openweathermap.org/data/2.5/air_pollution?appid=' + appKey;
+	const reverseLocationAPI = 'https://api.openweathermap.org/geo/1.0/reverse?limit=1&appid=' + appKey;
+	const weatherFromLocationAPI = 'https://api.openweathermap.org/data/2.5/weather?&units=metric&appid=' + appKey;
+	const airQuality = [
+		'good quality', // 100%
+		'fair quality', // 80 %
+		'moderate quality', // 60%
+		'poor quality', // 40%
+		'very poor quality' // 20%
+	];
 
-	// Constructor ----------------------------------------------------------------
-	constructor(props) {
-		super(props)
-		const appKey = '43cebb6f101584f15a47a1581d009ee7'
-		this.airQualityAPI = 'https://api.openweathermap.org/data/2.5/air_pollution?appid=' + appKey
-		this.reverseLocationAPI = 'https://api.openweathermap.org/geo/1.0/reverse?limit=1&appid=' + appKey
-		this.weatherFromLocationAPI = 'https://api.openweathermap.org/data/2.5/weather?&units=metric&appid=' + appKey
+	const [data, setData] = useState({
+		co: [],
+		o3: [],
+		so2: [],
+		pm2_5: []
+	});
+	const [label, setLabel] = useState([]);
+	const [indexQuality, setIndexQuality] = useState(0);
+	const [latitude, setLatitude] = useState(48.856614);
+	const [longitude, setLongitude] = useState(2.3522219);
+	const [altitude, setAltitude] = useState(35);
+	const [nameLocation, setNameLocation] = useState('Paris');
+	const [weatherLocation, setWeatherLocation] = useState(null);
+	const [loadingAirData, setLoadingAirData] = useState(true);
+	const [loadingNameLocation, setLoadingNameLocation] = useState(true);
+	const [loadingWeather, setLoadingWeahter] = useState(true);
 
-
-		this.airQuality = [
-			'good quality', // 100%
-			'fair quality', // 80 %
-			'moderate quality', // 60%
-			'poor quality', // 40%
-			'very poor quality' // 20%
-		]
-		this.state = {
-			data: {
-				co: [],
-				o3: [],
-				so2: [],
-				pm2_5: []
-			},
-			label: [],
-			indexQuality: 0,
-			// Paris by default
-			latitude: 48.856614,
-			longitude: 2.3522219,
-			altitude: 35,
-			nameLocation: 'Paris',
-			weatherLocation: null,
-      loadingAirData: true,
-      loadingNameLocation: true,
-      loadingWeather: true
-		}
-	}
-
-	componentDidMount() {
+	useEffect(() => {
 		if (navigator.geolocation) {
 			const options = {
 				  enableHighAccuracy: true,
@@ -56,78 +46,71 @@ export default class AirFlow extends React.Component {
 			// Position de l'utilisateur au premier lancement
 			navigator.geolocation.getCurrentPosition(
 				(position) => {
-					this.setState({
-						latitude: position.coords.latitude,
-						longitude: position.coords.longitude,
-						altitude: position.coords.altitude
-					}, () => {
-            this.getAirFlowData()
-            this.getNameLocation()
-            this.getWeatherLocation()
-					})},
-				(err) => {
-          // Service location denied by user
-          this.setState({loadingNameLocation: false});
-          this.getAirFlowData()
-          this.getWeatherLocation()
-					console.log(err)
+					setLatitude(position.coords.latitude);
+					setLongitude(position.coords.longitude);
+					setAltitude(position.coords.altitude);
+					getAirFlowData();
+					getNameLocation();
+					getWeatherLocation();
+			
 				},
-				options
+				(err) => {
+				// Service location denied by user
+				setLoadingNameLocation(false);
+				getAirFlowData();
+				getWeatherLocation();
+				console.log(err);
+				}, options
 			)
 		}
+	  }, []);
 
-		this.line = setInterval(
-			() => {
-        this.setState({ refreshAt: moment().format('HH:mm:ss')})
-				this.getAirFlowData()
-				this.getWeatherLocation()
-			},
-			1000*60*5
-		)
-	}
-
-	componentWillUnmount() {
-		clearInterval(this.line);
-	}
+	  useEffect(() => {
+		const interval = setInterval(() => {
+			getAirFlowData()
+			getWeatherLocation()
+		}, 10000);
+		return () => clearInterval(interval);
+	  }, []);
 
 // Functions ----------------------------------------------------------------
-	getDataLine = () => {
+	const getDataLine = () => {
 		return {
-			labels: this.state.label,
+			labels: label,
 			datasets: [
 				{
 					label: 'Сoncentration of CO (Carbon monoxide), μg/m3',
-					data: this.state.data.co,
+					data: data.co,
 					fill: false,
 					backgroundColor: 'rgb(255, 99, 132)',
 					borderColor: 'rgba(255, 99, 132, 0.3)',
 				},
 				{
 					label: 'Сoncentration of O3 (Ozone), μg/m3',
-					data: this.state.data.o3,
+					data: data.o3,
 					fill: false,
 					backgroundColor: 'rgb(0, 140, 255)',
 					borderColor: 'rgba(0, 140, 255, 0.3)',
 				},
 				{
 					label: 'Сoncentration of SO2 (Sulphur dioxide), μg/m3',
-					data: this.state.data.so2,
+					data: data.so2,
 					fill: false,
 					backgroundColor: 'rgb(199, 140, 255)',
 					borderColor: 'rgba(199, 140, 255, 0.3)',
 				},
 				{
 					label: 'Сoncentration of PM2.5 (Fine particles matter), μg/m3',
-					data: this.state.data.pm2_5,
+					data: data.pm2_5,
 					fill: false,
 					backgroundColor: 'rgb(67, 245, 123)',
 					borderColor: 'rgba(67, 245, 123, 0.3)',
 				}
 			]
-		}
+		};
 	}
 
-	getOptionsLine = () => {
+	const getOptionsLine = () => {
 		return {
 			scales: {
 				yAxes: [
@@ -139,73 +122,73 @@ export default class AirFlow extends React.Component {
 				],
 			},
 			maintainAspectRatio: false
-		}
+		};
 	}
 
 // API calls ----------------------------------------------------------------
-	getAirFlowData = () => {
-		const url = this.airQualityAPI + '&lat='+this.state.latitude+'&lon='+this.state.longitude
+	const getAirFlowData = () => {
+		const url = airQualityAPI + '&lat='+latitude+'&lon='+longitude
 		fetch(url)
 		.then(res => res.json())
 		.then(
 			(result) => {
 
-				let data = {...this.state.data}
+				let myData = {...data};
 
-				const co = data.co
-				let element = result.list[0].components.co
-				co.push(element)
+				const co = myData.co;
+				let element = result.list[0].components.co;
+				co.push(element);
 
-				const o3 = data.o3
-				element = result.list[0].components.o3
-				o3.push(element)
+				const o3 = myData.o3;
+				element = result.list[0].components.o3;
+				o3.push(element);
 
-				const so2 = data.so2
-				element = result.list[0].components.so2
-				so2.push(element)
+				const so2 = myData.so2;
+				element = result.list[0].components.so2;
+				so2.push(element);
 
-				const pm2_5 = data.pm2_5
-				element = result.list[0].components.pm2_5
-				pm2_5.push(element)
+				const pm2_5 = myData.pm2_5;
+				element = result.list[0].components.pm2_5;
+				pm2_5.push(element);
 
-				data = {co, o3, so2, pm2_5}
+				myData = {co, o3, so2, pm2_5};
 
-				const label = [...this.state.label]
-				const initDate = new Date()
-				const newLabel = initDate.toLocaleTimeString()
-				label.push(newLabel)
+				
+				const myLabel = [...label];
+				const initDate = new Date();
+				const newLabel = initDate.toLocaleTimeString();
+				myLabel.push(newLabel);
 
-				const indexQuality = result.list[0].main.aqi
+				const indexQuality = result.list[0].main.aqi;
 
-				this.setState({
-					data : data,
-					label: label,
-					indexQuality: indexQuality,
-          loadingAirData: false
-				})
+				setData(myData);
+				setLabel(myLabel);
+				setIndexQuality(indexQuality);
+				setLoadingAirData(false);
 			},
 			(error) => {
-				console.log(error)
+				console.log(error);
 			}
-		)
+		);
 	}
 
-	getNameLocation = () => {
-		const url = this.reverseLocationAPI + '&lat='+this.state.latitude+'&lon='+this.state.longitude
+	const getNameLocation = () => {
+		const url = reverseLocationAPI + '&lat='+latitude+'&lon='+longitude;
 		fetch(url)
 		.then(res => res.json())
 		.then(
 			(result) => {
-				this.setState({ nameLocation: result[0].name, loadingNameLocation: false })
+				setNameLocation(result[0].name);
+				setLoadingNameLocation(false);
 			},
 			(error) => {
-				console.log(error)
+				console.log(error);
 			}
-		)
+		);
 	}
 
-	getWeatherLocation = () => {
-		const url = this.weatherFromLocationAPI + '&lat='+this.state.latitude+'&lon='+this.state.longitude
+	const getWeatherLocation = () => {
+		const url = weatherFromLocationAPI + '&lat='+latitude+'&lon='+longitude;
 		fetch(url)
 		.then(res => res.json())
 		.then(
@@ -217,99 +200,97 @@ export default class AirFlow extends React.Component {
 					temperature: result.main.temp,
 					humidity: result.main.humidity,
 				}
-				this.setState({ weatherLocation: weather, loadingWeather: false })
+				setWeatherLocation(weather);
+				setLoadingWeahter(false);
 			},
 			(error) => {
-				console.log(error)
+				console.log(error);
 			}
-		)
+		);
 	}
 
 	// Components ----------------------------------------------------------------
-	renderTitle = () => {
-    const title = 'Air quality in'
-		if (this.state.loadingNameLocation) return `${title} loading...`
-		return `${title} ${this.state.nameLocation}`
+	const RenderTitle = () => {
+    const title = 'Air quality in';
+		if (loadingNameLocation) return `${title} loading...`;
+		return `${title} ${nameLocation}`;
 	}
 
-	renderAirQuality = () => {
-    const quality = 'Quality :'
-    if (this.state.loadingAirData) return `${quality} loading...`
-    console.log(this.state.indexQuality);
-		let airQuality = `${quality} ${this.airQuality[this.state.indexQuality-1]}`
-		return airQuality += (this.state.indexQuality !== 0) ? ' ('+((6-this.state.indexQuality)/5)*100+'%)': ''
+	const RenderAirQuality = () => {
+    const quality = 'Quality :';
+    if (loadingAirData) return `${quality} loading...`;
+		let myAirQuality = `${quality} ${airQuality[indexQuality-1]}`;
+		return myAirQuality += (indexQuality !== 0) ? ' ('+((6-indexQuality)/5)*100+'%)': '';
 	}
 
-	renderWeather = () => {
-		if (this.state.loadingWeather) return null
-		const imgSrc = "https://openweathermap.org/img/wn/"+this.state.weatherLocation.icon+".png"
-		const title = this.state.weatherLocation.main
-		const description = this.state.weatherLocation.description
-		const alt = this.state.weatherLocation.icon
-		const temperature = this.state.weatherLocation.temperature
-		const humidity = this.state.weatherLocation.humidity
+	const RenderWeather = () => {
+		if (loadingWeather) return null;
+		const imgSrc = "https://openweathermap.org/img/wn/"+weatherLocation.icon+".png";
+		const title = weatherLocation.main;
+		const description = weatherLocation.description;
+		const alt = weatherLocation.icon;
+		const temperature = weatherLocation.temperature;
+		const humidity = weatherLocation.humidity;
 		const container = {
 			display: 'flex',
 			flexFlow: 'row wrap',
 			alignItems: 'center'
-		}
+		};
 		return (
 			<div className={css(container)}>
 				<img src={imgSrc} title={title} alt={alt}/>
 				<span className={css({fontSize: '1.2rem'})}> {temperature}°C. | {humidity}%</span>
 				<span className={css({fontSize: '1rem', marginLeft: '5px'})}> {description} </span>
 			</div>
-		)
+		);
 
 	}
 
-	render() {
-		// https://sevketyalcin.com/blog/responsive-charts-using-Chart.js-and-react-chartjs-2/
-		const canvasContainer = {
-			height: '60vh' // vh : viewport height
-		}
+	// https://sevketyalcin.com/blog/responsive-charts-using-Chart.js-and-react-chartjs-2/
+	const canvasContainer = {
+		height: '60vh' // vh : viewport height
+	}
 
-		// Parent
-		const topContainer = {
-			display: 'flex',
-			// flexFlow: row wrap, correspond à :
-			// flexDirection: 'row' : direction : ligne ou colonne
-			// flewWrap: 'wrap' : bascule en ligne ou colonne si espace insuffisant
-			flexFlow: 'row wrap',
-			alignItems: 'center', // baseline : ajuste les enfants verticalement sur leur base
-			justifyContent: 'space-around' // ou space-evenly
-		}
+	// Parent
+	const topContainer = {
+		display: 'flex',
+		// flexFlow: row wrap, correspond à :
+		// flexDirection: 'row' : direction : ligne ou colonne
+		// flewWrap: 'wrap' : bascule en ligne ou colonne si espace insuffisant
+		flexFlow: 'row wrap',
+		alignItems: 'center', // baseline : ajuste les enfants verticalement sur leur base
+		justifyContent: 'space-around' // ou space-evenly
+	}
 
-		const bottomContainer = {
-			display: 'flex',
-			justifyContent: 'center'
-		}
+	const bottomContainer = {
+		display: 'flex',
+		justifyContent: 'center'
+	}
 
-		// Enfant
-		// flex : { flex-grow flex-shrink flex-basis }
-		// flex-grow : l'enfant choisi occupe le maximum d'espace
-		// Exemple : flex: 1 1 auto
+	// Enfant
+	// flex : { flex-grow flex-shrink flex-basis }
+	// flex-grow : l'enfant choisi occupe le maximum d'espace
+	// Exemple : flex: 1 1 auto
 
-		return (
-			<div className={css(canvasContainer)}>
-				<div className={css(topContainer)}>
-					<h1 className={css({ textAlign: 'center' })}> {this.renderTitle()} </h1>
-					<h2> {this.renderAirQuality()} </h2>
-					<h2> {this.renderWeather()} </h2>
-					<Leaflet coordinates={[this.state.latitude, this.state.longitude]} altitude={this.state.altitude}/>
-				</div>
-				<Line
-					height={550}
-					width={1100}
-					data={this.getDataLine()}
-					options={this.getOptionsLine()}
-				/>
-				<div className={css(bottomContainer)}>
-					<small>
-						Auto refresh data air quality <strong> every 5 minutes</strong>.
-					</small>
-				</div>
+	return (
+		<div className={css(canvasContainer)}>
+			<div className={css(topContainer)}>
+				<h1 className={css({ textAlign: 'center' })}> <RenderTitle/> </h1>
+				<h2> <RenderAirQuality/> </h2>
+				<h2> <RenderWeather/> </h2>
+				<Leaflet coordinates={[latitude, longitude]} altitude={altitude}/>
 			</div>
-		)
-	}
+			<Line
+				height={550}
+				width={1100}
+				data={getDataLine()}
+				options={getOptionsLine()}
+			/>
+			<div className={css(bottomContainer)}>
+				<small>
+					Auto refresh data air quality <strong> every 5 minutes</strong>.
+				</small>
+			</div>
+		</div>
+	)
 }
