@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 // https://www.npmjs.com/package/react-chartjs-2
 import { Line } from "react-chartjs-2";
 import { css } from "@emotion/css";
-import { Leaflet } from "../Leaflet/index.js";
+// import { Leaflet } from "../Leaflet/index.js";
 
 export default function AirFlow() {
   const appKey = "43cebb6f101584f15a47a1581d009ee7";
@@ -20,23 +20,72 @@ export default function AirFlow() {
     "poor quality", // 40%
     "very poor quality", // 20%
   ];
-
-  const [data, setData] = useState({
+  const data = {
+    label: [],
     co: [],
     o3: [],
     so2: [],
     pm2_5: [],
-  });
-  const [label, setLabel] = useState([]);
+  };
+
+  const baseDataLine = {
+    labels: data.label,
+    datasets: [
+      {
+        label: "Concentration of CO (Carbon monoxide), μg/m3",
+        data: data.co,
+        fill: false,
+        backgroundColor: "rgb(255, 99, 132)",
+        borderColor: "rgba(255, 99, 132, 0.3)",
+      },
+      {
+        label: "Concentration of O3 (Ozone), μg/m3",
+        data: data.o3,
+        fill: false,
+        backgroundColor: "rgb(0, 140, 255)",
+        borderColor: "rgba(0, 140, 255, 0.3)",
+      },
+      {
+        label: "Concentration of SO2 (Sulphur dioxide), μg/m3",
+        data: data.so2,
+        fill: false,
+        backgroundColor: "rgb(199, 140, 255)",
+        borderColor: "rgba(199, 140, 255, 0.3)",
+      },
+      {
+        label: "Concentration of PM2.5 (Fine particles matter), μg/m3",
+        data: data.pm2_5,
+        fill: false,
+        backgroundColor: "rgb(67, 245, 123)",
+        borderColor: "rgba(67, 245, 123, 0.3)",
+      },
+    ],
+  };
+  
+  const baseOptionsLine = {
+    scales: {
+      yAxes: [
+        {
+          ticks: {
+            beginAtZero: true,
+          },
+        },
+      ],
+    },
+    maintainAspectRatio: false
+  };
+
   const [indexQuality, setIndexQuality] = useState(0);
-  const [latitude, setLatitude] = useState(48.856614);
-  const [longitude, setLongitude] = useState(2.3522219);
-  const [altitude, setAltitude] = useState(35);
-  const [nameLocation, setNameLocation] = useState("Paris");
+  const [latitude, setLatitude] = useState(null);
+  const [longitude, setLongitude] = useState(null);
+  const [altitude, setAltitude] = useState(null);
+  const [nameLocation, setNameLocation] = useState(null);
   const [weatherLocation, setWeatherLocation] = useState(null);
   const [loadingAirData, setLoadingAirData] = useState(true);
   const [loadingNameLocation, setLoadingNameLocation] = useState(true);
   const [loadingWeather, setLoadingWeahter] = useState(true);
+  const [dataLine, setDataLine] = useState(baseDataLine);
+  const [initClock, setInitClock] = useState(false);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -53,15 +102,15 @@ export default function AirFlow() {
           setLatitude(position.coords.latitude);
           setLongitude(position.coords.longitude);
           setAltitude(position.coords.altitude);
-          getAirFlowData();
-          getNameLocation();
-          getWeatherLocation();
         },
         (err) => {
           // Service location denied by user
+          // Default Paris
+          setLatitude(48.856614);
+          setLongitude(2.3522219);
+          setAltitude(35);
+          setNameLocation('Paris');
           setLoadingNameLocation(false);
-          getAirFlowData();
-          getWeatherLocation();
           console.log(err);
         },
         options
@@ -70,67 +119,33 @@ export default function AirFlow() {
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    if (latitude && longitude) {
+      if (loadingNameLocation) {
+        getNameLocation();
+      }
       getAirFlowData();
       getWeatherLocation();
-    }, 10000);
-    return () => clearInterval(interval);
-  }, []);
+      setInitClock(true);
+    }
+  }, [latitude, longitude, altitude]);
 
-  // Functions ----------------------------------------------------------------
-  const getDataLine = () => {
-    return {
-      labels: label,
-      datasets: [
-        {
-          label: "Сoncentration of CO (Carbon monoxide), μg/m3",
-          data: data.co,
-          fill: false,
-          backgroundColor: "rgb(255, 99, 132)",
-          borderColor: "rgba(255, 99, 132, 0.3)",
-        },
-        {
-          label: "Сoncentration of O3 (Ozone), μg/m3",
-          data: data.o3,
-          fill: false,
-          backgroundColor: "rgb(0, 140, 255)",
-          borderColor: "rgba(0, 140, 255, 0.3)",
-        },
-        {
-          label: "Сoncentration of SO2 (Sulphur dioxide), μg/m3",
-          data: data.so2,
-          fill: false,
-          backgroundColor: "rgb(199, 140, 255)",
-          borderColor: "rgba(199, 140, 255, 0.3)",
-        },
-        {
-          label: "Сoncentration of PM2.5 (Fine particles matter), μg/m3",
-          data: data.pm2_5,
-          fill: false,
-          backgroundColor: "rgb(67, 245, 123)",
-          borderColor: "rgba(67, 245, 123, 0.3)",
-        },
-      ],
-    };
-  };
+  useEffect(() => {
+    if (initClock) {
+      const interval = setInterval(() => {
+        console.log('data', data);
+        getAirFlowData();
+        getWeatherLocation();
+      }, 10000);
+      return () => clearInterval(interval); 
+    }
+  }, [initClock]);
 
-  const getOptionsLine = () => {
-    return {
-      scales: {
-        yAxes: [
-          {
-            ticks: {
-              beginAtZero: true,
-            },
-          },
-        ],
-      },
-      maintainAspectRatio: false,
-    };
-  };
+
 
   // API calls ----------------------------------------------------------------
   const getAirFlowData = () => {
+    console.log('latitude', latitude);
+    console.log('longitude', longitude);
     const url = airQualityAPI + "&lat=" + latitude + "&lon=" + longitude;
     fetch(url)
       .then((res) => res.json())
@@ -154,18 +169,47 @@ export default function AirFlow() {
           element = result.list[0].components.pm2_5;
           pm2_5.push(element);
 
-          myData = { co, o3, so2, pm2_5 };
+          const label = myData.label;
 
-          const myLabel = [...label];
           const initDate = new Date();
           const newLabel = initDate.toLocaleTimeString();
-          myLabel.push(newLabel);
+          label.push(newLabel);
 
-          const indexQuality = result.list[0].main.aqi;
+          setDataLine({
+            labels: myData.label,
+            datasets: [
+              {
+                label: "Concentration of CO (Carbon monoxide), μg/m3",
+                data: myData.co,
+                fill: false,
+                backgroundColor: "rgb(255, 99, 132)",
+                borderColor: "rgba(255, 99, 132, 0.3)",
+              },
+              {
+                label: "Concentration of O3 (Ozone), μg/m3",
+                data: myData.o3,
+                fill: false,
+                backgroundColor: "rgb(0, 140, 255)",
+                borderColor: "rgba(0, 140, 255, 0.3)",
+              },
+              {
+                label: "Concentration of SO2 (Sulphur dioxide), μg/m3",
+                data: myData.so2,
+                fill: false,
+                backgroundColor: "rgb(199, 140, 255)",
+                borderColor: "rgba(199, 140, 255, 0.3)",
+              },
+              {
+                label: "Concentration of PM2.5 (Fine particles matter), μg/m3",
+                data: myData.pm2_5,
+                fill: false,
+                backgroundColor: "rgb(67, 245, 123)",
+                borderColor: "rgba(67, 245, 123, 0.3)",
+              },
+            ],
+          });
 
-          setData(myData);
-          setLabel(myLabel);
-          setIndexQuality(indexQuality);
+          setIndexQuality(result.list[0].main.aqi);
           setLoadingAirData(false);
         },
         (error) => {
@@ -297,13 +341,13 @@ export default function AirFlow() {
           {" "}
           <RenderWeather />{" "}
         </h2>
-        <Leaflet coordinates={[latitude, longitude]} altitude={altitude} />
+        {/* <Leaflet coordinates={[latitude, longitude]} altitude={altitude} /> */}
       </div>
       <Line
         height={550}
         width={1100}
-        data={getDataLine()}
-        options={getOptionsLine()}
+        data={dataLine}
+        options={baseOptionsLine}
       />
       <div className={css(bottomContainer)}>
         <small>
