@@ -20,13 +20,13 @@ export default function AirFlow() {
     "poor quality", // 40%
     "very poor quality", // 20%
   ];
-  const data = {
+  const [data, setData ]= useState ({
     label: [],
     co: [],
     o3: [],
     so2: [],
     pm2_5: [],
-  };
+  });
 
   const baseDataLine = {
     labels: data.label,
@@ -76,9 +76,7 @@ export default function AirFlow() {
   };
 
   const [indexQuality, setIndexQuality] = useState(0);
-  const [latitude, setLatitude] = useState(null);
-  const [longitude, setLongitude] = useState(null);
-  const [altitude, setAltitude] = useState(null);
+  const [geoloc, setGeoloc] = useState({latitude: null, longitude: null, altitude: null});
   const [nameLocation, setNameLocation] = useState(null);
   const [weatherLocation, setWeatherLocation] = useState(null);
   const [loadingAirData, setLoadingAirData] = useState(true);
@@ -99,16 +97,20 @@ export default function AirFlow() {
       // Position de l'utilisateur au premier lancement
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setLatitude(position.coords.latitude);
-          setLongitude(position.coords.longitude);
-          setAltitude(position.coords.altitude);
+          setGeoloc({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            altitude: position.coords.altitude
+          });
         },
         (err) => {
           // Service location denied by user
           // Default Paris
-          setLatitude(48.856614);
-          setLongitude(2.3522219);
-          setAltitude(35);
+          setGeoloc({
+            latitude: 48.856614,
+            longitude: 2.3522219,
+            altitude: 35
+          });
           setNameLocation('Paris');
           setLoadingNameLocation(false);
           console.log(err);
@@ -119,7 +121,7 @@ export default function AirFlow() {
   }, []);
 
   useEffect(() => {
-    if (latitude && longitude) {
+    if (geoloc.latitude && geoloc.longitude) {
       if (loadingNameLocation) {
         getNameLocation();
       }
@@ -127,12 +129,11 @@ export default function AirFlow() {
       getWeatherLocation();
       setInitClock(true);
     }
-  }, [latitude, longitude, altitude]);
+  }, [geoloc.latitude, geoloc.longitude, geoloc.altitude]);
 
   useEffect(() => {
     if (initClock) {
       const interval = setInterval(() => {
-        console.log('data', data);
         getAirFlowData();
         getWeatherLocation();
       }, 10000);
@@ -144,9 +145,7 @@ export default function AirFlow() {
 
   // API calls ----------------------------------------------------------------
   const getAirFlowData = () => {
-    console.log('latitude', latitude);
-    console.log('longitude', longitude);
-    const url = airQualityAPI + "&lat=" + latitude + "&lon=" + longitude;
+    const url = airQualityAPI + "&lat=" + geoloc.latitude + "&lon=" + geoloc.longitude;
     fetch(url)
       .then((res) => res.json())
       .then(
@@ -170,10 +169,12 @@ export default function AirFlow() {
           pm2_5.push(element);
 
           const label = myData.label;
-
           const initDate = new Date();
           const newLabel = initDate.toLocaleTimeString();
           label.push(newLabel);
+
+          myData = { label, co, o3, so2, pm2_5 };
+          setData(myData);
 
           setDataLine({
             labels: myData.label,
@@ -219,7 +220,7 @@ export default function AirFlow() {
   };
 
   const getNameLocation = () => {
-    const url = reverseLocationAPI + "&lat=" + latitude + "&lon=" + longitude;
+    const url = reverseLocationAPI + "&lat=" + geoloc.latitude + "&lon=" + geoloc.longitude;
     fetch(url)
       .then((res) => res.json())
       .then(
@@ -235,7 +236,7 @@ export default function AirFlow() {
 
   const getWeatherLocation = () => {
     const url =
-      weatherFromLocationAPI + "&lat=" + latitude + "&lon=" + longitude;
+      weatherFromLocationAPI + "&lat=" + geoloc.latitude + "&lon=" + geoloc.longitude;
     fetch(url)
       .then((res) => res.json())
       .then(
