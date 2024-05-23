@@ -1,18 +1,24 @@
+// Core
 import { useEffect, useState } from "react";
+import moment from 'moment';
 // https://www.npmjs.com/package/react-chartjs-2
-import { Line } from "react-chartjs-2";
+// Components
+import { LineChart } from '@mui/x-charts/LineChart';
 import { css } from "@emotion/css";
 // import { Leaflet } from "../Leaflet/index.js";
+// Logic
+
+// ---------------------------------------------------------------------------------
 
 export default function AirFlow() {
-  const appKey = "43cebb6f101584f15a47a1581d009ee7";
+  const apiKey = process.env.REACT_APP_API_KEY;
   const airQualityAPI =
-    "https://api.openweathermap.org/data/2.5/air_pollution?appid=" + appKey;
+    "https://api.openweathermap.org/data/2.5/air_pollution?appid=" + apiKey;
   const reverseLocationAPI =
-    "https://api.openweathermap.org/geo/1.0/reverse?limit=1&appid=" + appKey;
+    "https://api.openweathermap.org/geo/1.0/reverse?limit=1&appid=" + apiKey;
   const weatherFromLocationAPI =
     "https://api.openweathermap.org/data/2.5/weather?&units=metric&appid=" +
-    appKey;
+    apiKey;
   const airQuality = [
     "good quality", // 100%
     "fair quality", // 80 %
@@ -20,60 +26,13 @@ export default function AirFlow() {
     "poor quality", // 40%
     "very poor quality", // 20%
   ];
-  const [data, setData ]= useState ({
-    label: [],
+  const [data, setData] = useState ({
+    times: [],
     co: [],
     o3: [],
     so2: [],
-    pm2_5: [],
+    pm25: [],
   });
-
-  const baseDataLine = {
-    labels: data.label,
-    datasets: [
-      {
-        label: "Concentration of CO (Carbon monoxide), μg/m3",
-        data: data.co,
-        fill: false,
-        backgroundColor: "rgb(255, 99, 132)",
-        borderColor: "rgba(255, 99, 132, 0.3)",
-      },
-      {
-        label: "Concentration of O3 (Ozone), μg/m3",
-        data: data.o3,
-        fill: false,
-        backgroundColor: "rgb(0, 140, 255)",
-        borderColor: "rgba(0, 140, 255, 0.3)",
-      },
-      {
-        label: "Concentration of SO2 (Sulphur dioxide), μg/m3",
-        data: data.so2,
-        fill: false,
-        backgroundColor: "rgb(199, 140, 255)",
-        borderColor: "rgba(199, 140, 255, 0.3)",
-      },
-      {
-        label: "Concentration of PM2.5 (Fine particles matter), μg/m3",
-        data: data.pm2_5,
-        fill: false,
-        backgroundColor: "rgb(67, 245, 123)",
-        borderColor: "rgba(67, 245, 123, 0.3)",
-      },
-    ],
-  };
-  
-  const baseOptionsLine = {
-    scales: {
-      yAxes: [
-        {
-          ticks: {
-            beginAtZero: true,
-          },
-        },
-      ],
-    },
-    maintainAspectRatio: false
-  };
 
   const [indexQuality, setIndexQuality] = useState(0);
   const [geoloc, setGeoloc] = useState({latitude: null, longitude: null, altitude: null});
@@ -82,9 +41,10 @@ export default function AirFlow() {
   const [loadingAirData, setLoadingAirData] = useState(true);
   const [loadingNameLocation, setLoadingNameLocation] = useState(true);
   const [loadingWeather, setLoadingWeahter] = useState(true);
-  const [dataLine, setDataLine] = useState(baseDataLine);
   const [initClock, setInitClock] = useState(false);
 
+
+// Effects -------------------------------------------------------------------------
   useEffect(() => {
     if (navigator.geolocation) {
       const options = {
@@ -164,51 +124,16 @@ export default function AirFlow() {
           element = result.list[0].components.so2;
           so2.push(element);
 
-          const pm2_5 = myData.pm2_5;
+          const pm25 = myData.pm25;
           element = result.list[0].components.pm2_5;
-          pm2_5.push(element);
+          pm25.push(element);
 
-          const label = myData.label;
-          const initDate = new Date();
-          const newLabel = initDate.toLocaleTimeString();
-          label.push(newLabel);
+          const times = myData.times;
+          times.push(new Date());
 
-          myData = { label, co, o3, so2, pm2_5 };
+          myData = { times, co, o3, so2, pm25 };
+
           setData(myData);
-
-          setDataLine({
-            labels: myData.label,
-            datasets: [
-              {
-                label: "Concentration of CO (Carbon monoxide), μg/m3",
-                data: myData.co,
-                fill: false,
-                backgroundColor: "rgb(255, 99, 132)",
-                borderColor: "rgba(255, 99, 132, 0.3)",
-              },
-              {
-                label: "Concentration of O3 (Ozone), μg/m3",
-                data: myData.o3,
-                fill: false,
-                backgroundColor: "rgb(0, 140, 255)",
-                borderColor: "rgba(0, 140, 255, 0.3)",
-              },
-              {
-                label: "Concentration of SO2 (Sulphur dioxide), μg/m3",
-                data: myData.so2,
-                fill: false,
-                backgroundColor: "rgb(199, 140, 255)",
-                borderColor: "rgba(199, 140, 255, 0.3)",
-              },
-              {
-                label: "Concentration of PM2.5 (Fine particles matter), μg/m3",
-                data: myData.pm2_5,
-                fill: false,
-                backgroundColor: "rgb(67, 245, 123)",
-                borderColor: "rgba(67, 245, 123, 0.3)",
-              },
-            ],
-          });
 
           setIndexQuality(result.list[0].main.aqi);
           setLoadingAirData(false);
@@ -309,12 +234,9 @@ export default function AirFlow() {
   // Parent
   const topContainer = {
     display: "flex",
-    // flexFlow: row wrap, correspond à :
-    // flexDirection: 'row' : direction : ligne ou colonne
-    // flewWrap: 'wrap' : bascule en ligne ou colonne si espace insuffisant
     flexFlow: "row wrap",
-    alignItems: "center", // baseline : ajuste les enfants verticalement sur leur base
-    justifyContent: "space-around", // ou space-evenly
+    alignItems: "center",
+    justifyContent: "space-around",
   };
 
   const bottomContainer = {
@@ -322,10 +244,7 @@ export default function AirFlow() {
     justifyContent: "center",
   };
 
-  // Enfant
-  // flex : { flex-grow flex-shrink flex-basis }
-  // flex-grow : l'enfant choisi occupe le maximum d'espace
-  // Exemple : flex: 1 1 auto
+  console.log('data', data);
 
   return (
     <div className={css(canvasContainer)}>
@@ -342,14 +261,40 @@ export default function AirFlow() {
           {" "}
           <RenderWeather />{" "}
         </h2>
-        {/* <Leaflet coordinates={[latitude, longitude]} altitude={altitude} /> */}
+        {/* <Leaflet geoloc={geoloc} /> */}
       </div>
-      <Line
-        height={550}
-        width={1100}
-        data={dataLine}
-        options={baseOptionsLine}
-      />
+   <LineChart
+       xAxis={[
+        {
+          label: "Date",
+          data: data.times,
+          scaleType: "time",
+          valueFormatter: (time) => moment(time).format("HH:mm:ss")
+        },
+      ]}
+      yAxis={[{ label: "Concentration of particles, μg/m3" }]}
+      series={[
+        {
+          label: "CO (Carbon monoxide)",
+          data: data.co,
+        },
+        {
+          label: "O3 (Ozone)",
+          data: data.o3,
+        },
+        {
+          label: "SO2 (Sulphur dioxide)",
+          data: data.so2,
+        },
+        {
+          label: "PM2.5 (Fine particles matter)",
+          data: data.pm25,
+        }
+      ]}
+      height={400}
+      margin={{ left: 60, right: 30, top: 30, bottom: 60 }}
+      grid={{ vertical: true, horizontal: true }}
+    />
       <div className={css(bottomContainer)}>
         <small>
           Auto refresh data air quality <strong> every 5 minutes</strong>.
