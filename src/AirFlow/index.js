@@ -1,10 +1,12 @@
 // Core
 import { useEffect, useState } from "react";
 import moment from 'moment';
-// https://www.npmjs.com/package/react-chartjs-2
 // Components
 import { LineChart } from '@mui/x-charts/LineChart';
-import { css } from "@emotion/css";
+import { Stack, Typography } from '@mui/material';
+import Title from './Title';
+import AirQuality from './AirQuality';
+import Weather from './Weather';
 // import Leaflet from "../Leaflet/index.js";
 // Logic
 import { fetchApi } from "../Promises";
@@ -103,7 +105,7 @@ const AirFlow = () => {
       const interval = setInterval(() => {
         setAirQuality();
         setWeatherLocation();
-      }, 30000);
+      }, 60000);
       return () => clearInterval(interval); 
     }
   }, [initClock]);
@@ -175,124 +177,63 @@ const AirFlow = () => {
     setLoadingWeather(false);
   };
 
-  // Components ----------------------------------------------------------------
-  const RenderTitle = () => {
-    const title = "Air quality in";
-    if (loadingNameLoc) return `${title} loading...`;
-    return `${title} ${nameLoc}`;
-  };
-
-  const RenderAirQuality = () => {
-    const quality = "Quality :";
-    if (loadingAirQuality) return `${quality} loading...`;
-    let myAirQuality = `${quality} ${airQuality[indexQuality - 1]}`;
-    return (myAirQuality +=
-      indexQuality !== 0 ? " (" + ((6 - indexQuality) / 5) * 100 + "%)" : "");
-  };
-
-  const RenderWeather = () => {
-    if (loadingWeather) return null;
-    const imgSrc =
-      "https://openweathermap.org/img/wn/" + weatherLoc.icon + ".png";
-    const title = weatherLoc.main;
-    const description = weatherLoc.description;
-    const alt = weatherLoc.icon;
-    const temperature = weatherLoc.temperature;
-    const humidity = weatherLoc.humidity;
-    const container = {
-      display: "flex",
-      flexFlow: "row wrap",
-      alignItems: "center",
-    };
-    return (
-      <div className={css(container)}>
-        <img src={imgSrc} title={title} alt={alt} />
-        <span className={css({ fontSize: "1.2rem" })}>
-          {" "}
-          {temperature}°C. | {humidity}%
-        </span>
-        <span className={css({ fontSize: "1rem", marginLeft: "5px" })}>
-          {" "}
-          {description}{" "}
-        </span>
-      </div>
-    );
-  };
-
-  // https://sevketyalcin.com/blog/responsive-charts-using-Chart.js-and-react-chartjs-2/
-  const canvasContainer = {
-    height: "60vh", // vh : viewport height
-  };
-
-  // Parent
-  const topContainer = {
-    display: "flex",
-    flexFlow: "row wrap",
-    alignItems: "center",
-    justifyContent: "space-around",
-  };
-
-  const bottomContainer = {
-    display: "flex",
-    justifyContent: "center",
-  };
-
+  // JSX -------------------------------------------------------------------------
   return (
-    <div className={css(canvasContainer)}>
-      <div className={css(topContainer)}>
-        <h1 className={css({ textAlign: "center" })}>
-          {" "}
-          <RenderTitle />{" "}
-        </h1>
-        <h2>
-          {" "}
-          <RenderAirQuality />{" "}
-        </h2>
-        <h2>
-          {" "}
-          <RenderWeather />{" "}
-        </h2>
+    <Stack>
+      <Stack sx={topContainer}>
+          <Title loading={loadingNameLoc} name={nameLoc}/>
+          <AirQuality 
+            loading={loadingAirQuality} 
+            airQuality={airQuality} 
+            indexQuality={indexQuality}
+          />
+          <Weather loading={loadingWeather} weather={weatherLoc} />
         {/* <Leaflet geoloc={geoloc} /> */}
-      </div>
-   <LineChart
-       xAxis={[
-        {
-          label: "Heures",
-          data: data.times,
-          scaleType: "time",
-          valueFormatter: (time) => moment(time).format("HH:mm:ss")
-        },
-      ]}
-      yAxis={[{ label: "Concentration of particles, μg/m3" }]}
-      series={[
-        {
-          label: "CO (Carbon monoxide)",
-          data: data.co,
-        },
-        {
-          label: "O3 (Ozone)",
-          data: data.o3,
-        },
-        {
-          label: "SO2 (Sulphur dioxide)",
-          data: data.so2,
-        },
-        {
-          label: "PM2.5 (Fine particles matter)",
-          data: data.pm25,
-        }
-      ]}
-      height={400}
-      margin={{ left: 60, right: 30, top: 30, bottom: 60 }}
-      grid={{ vertical: true, horizontal: true }}
-    />
-      <div className={css(bottomContainer)}>
-        <small>
-          Auto refresh data air quality <strong> every 5 minutes</strong>.
-        </small>
-      </div>
-    </div>
+      </Stack>
+      <LineChart
+        xAxis={[
+          {
+            label: "Hours",
+            data: data.times,
+            scaleType: "time",
+            valueFormatter: (time) => moment(time).format("HH:mm:ss")
+          },
+        ]}
+        yAxis={[{ label: "Concentration of particles, μg/m3" }]}
+        series={[
+          {
+            label: "CO (Carbon monoxide)",
+            data: data.co,
+          },
+          {
+            label: "O3 (Ozone)",
+            data: data.o3,
+          },
+          {
+            label: "SO2 (Sulphur dioxide)",
+            data: data.so2,
+          },
+          {
+            label: "PM2.5 (Fine particles matter)",
+            data: data.pm25,
+          }
+        ]}
+        height={400}
+        margin={{ left: 60, right: 30, top: 30, bottom: 60 }}
+        grid={{ vertical: true, horizontal: true }}
+      />
+      <Typography sx={{ alignSelf: 'center' }}>
+        Auto refresh data air quality <strong> every 5 minutes</strong>.
+      </Typography>
+    </Stack>
   );
+};
+
+// Styles -------------------------------------------------------------------------
+const topContainer = {
+  flexFlow: "row wrap",
+  alignItems: "center",
+  justifyContent: "space-around",
 };
 
 export default AirFlow;
