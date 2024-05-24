@@ -1,9 +1,11 @@
 import PropTypes from 'prop-types';
-import Typography from '@mui/material/Typography';
+import { Skeleton, Typography } from '@mui/material';
+
+// ---------------------------------------------------------------------------------
 
 const AirQuality = ({ loading, airQuality, indexQuality}) => {
+  if (loading) return <Skeleton width={150} height={40} />;
     const quality = "Quality :";
-    if (loading) return `${quality} loading...`;
     if (indexQuality === 0) return null;
     let percentage = " (" + ((6 - indexQuality) / 5) * 100 + "%)";
     return <Typography variant='h5'> {quality} {airQuality[indexQuality - 1]} {percentage} </Typography>;

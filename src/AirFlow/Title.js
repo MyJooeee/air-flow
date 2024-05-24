@@ -1,9 +1,11 @@
 import PropTypes from 'prop-types';
-import Typography from '@mui/material/Typography';
+import { Skeleton, Typography } from '@mui/material';
+
+// ---------------------------------------------------------------------------------
 
 const Title = ({ loading, name }) => {
+  if (loading) return <Skeleton width={150} height={80} />;
     const title = "Air quality in";
-    if (loading) return `${title} loading...`;
     return <Typography variant='h4'> {title} {name} </Typography>;
   };
 

@@ -7,9 +7,9 @@ import { Stack, Typography } from '@mui/material';
 import Title from './Title';
 import AirQuality from './AirQuality';
 import Weather from './Weather';
-// import Leaflet from "../Leaflet/index.js";
+import Leaflet from '../Leaflet';
 // Logic
-import { fetchApi } from "../Promises";
+import { fetchApi } from '../Promises';
 
 // ---------------------------------------------------------------------------------
 
@@ -188,7 +188,7 @@ const AirFlow = () => {
             indexQuality={indexQuality}
           />
           <Weather loading={loadingWeather} weather={weatherLoc} />
-        {/* <Leaflet geoloc={geoloc} /> */}
+        <Leaflet geoloc={geoloc} />
       </Stack>
       <LineChart
         xAxis={[
