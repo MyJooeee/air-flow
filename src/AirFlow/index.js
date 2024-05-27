@@ -22,6 +22,7 @@ const AirFlow = () => {
   const weatherFromLocationAPI =
     "https://api.openweathermap.org/data/2.5/weather?&units=metric&appid=" +
     apiKey;
+  const [refreshAt, setRefreshAt] = useState(new Date());
   const airQuality = [
     "good quality", // 100%
     "fair quality", // 80 %
@@ -105,7 +106,7 @@ const AirFlow = () => {
       const interval = setInterval(() => {
         setAirQuality();
         setWeatherLocation();
-      }, 60000);
+      }, 60*1000 ); // Every minute
       return () => clearInterval(interval); 
     }
   }, [initClock]);
@@ -121,21 +122,35 @@ const AirFlow = () => {
     let myData = { ...data };
 
     const co = myData.co;
-    let element = result.list[0].components.co;
-    co.push(element);
-
     const o3 = myData.o3;
-    element = result.list[0].components.o3;
-    o3.push(element);
-
     const so2 = myData.so2;
-    element = result.list[0].components.so2;
-    so2.push(element);
-
     const pm25 = myData.pm25;
-    element = result.list[0].components.pm2_5;
-    pm25.push(element);
 
+    const lenCo = co.length;
+    const lenO3 = o3.length;
+    const lenSo2 = so2.length;
+    const lenPm25 = pm25.length;
+    
+    const newCo = result.list[0].components.co;
+    const newO3 = result.list[0].components.o3;
+    const newSo2 = result.list[0].components.so2;
+    const newPm25 = result.list[0].components.pm2_5;
+
+    setRefreshAt(new Date());
+    // Check if data change between two measures
+    if(
+      (lenCo && co[lenCo - 1] === newCo)
+      || (lenO3 && o3[lenO3 - 1] === newO3)
+      || (lenSo2 && so2[lenSo2 - 1] === newSo2)
+      || (lenPm25 && pm25[lenPm25 - 1] === newPm25)
+    ) {
+      return;
+    }
+
+    co.push(newCo);
+    o3.push(newO3);
+    so2.push(newSo2);
+    pm25.push(newPm25);
     const times = myData.times;
     times.push(new Date());
 
@@ -157,23 +172,32 @@ const AirFlow = () => {
   const setWeatherLocation = async () => {
     const url =
       weatherFromLocationAPI + "&lat=" + geoloc.latitude + "&lon=" + geoloc.longitude;
-      const result = await fetchApi(url);
+    const result = await fetchApi(url);
 
-    if (weatherLoc.main !== result.weather[0].main
-      && weatherLoc.description !== result.weather[0].description
-      && weatherLoc.icon !== result.weather[0].icon
-      && weatherLoc.temperature !== result.main.temp
-      && weatherLoc.humidity !== result.main.humidity
+    const newMain = result.weather[0].main;
+    const newDescription = result.weather[0].description;
+    const newIcon = result.weather[0].icon;
+    const newTemp = result.main.temp;
+    const newHumidity = result.main.humidity;
+
+    // Check if data change between two measures
+    if (weatherLoc.main === newMain
+      || weatherLoc.description === newDescription
+      || weatherLoc.icon === newIcon
+      || weatherLoc.temperature === newTemp
+      || weatherLoc.humidity === newHumidity
     ) {
-      const weather = {
-        main: result.weather[0].main,
-        description: result.weather[0].description,
-        icon: result.weather[0].icon,
-        temperature: result.main.temp,
-        humidity: result.main.humidity,
-      };
-      setWeatherLoc(weather);
+      return;
     }
+
+    const weather = {
+      main: newMain,
+      description: newDescription,
+      icon: newIcon,
+      temperature: newTemp,
+      humidity: newHumidity,
+    };
+    setWeatherLoc(weather);
     setLoadingWeather(false);
   };
 
@@ -223,7 +247,7 @@ const AirFlow = () => {
         grid={{ vertical: true, horizontal: true }}
       />
       <Typography sx={{ alignSelf: 'center' }}>
-        Auto refresh data air quality <strong> every 5 minutes</strong>.
+        Auto refresh data air quality <strong> on change </strong> ({moment(refreshAt).format("HH:mm:ss")}).
       </Typography>
     </Stack>
   );
