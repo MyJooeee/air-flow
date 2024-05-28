@@ -1,25 +1,15 @@
 {
   "files": {
-    "main.css": "/air-flow/static/css/main.7d180cbf.chunk.css",
-    "main.js": "/air-flow/static/js/main.ad6c0006.chunk.js",
-    "main.js.map": "/air-flow/static/js/main.ad6c0006.chunk.js.map",
-    "runtime-main.js": "/air-flow/static/js/runtime-main.7e1c2db1.js",
-    "runtime-main.js.map": "/air-flow/static/js/runtime-main.7e1c2db1.js.map",
-    "static/css/2.03d4f8d2.chunk.css": "/air-flow/static/css/2.03d4f8d2.chunk.css",
-    "static/js/2.7ec31454.chunk.js": "/air-flow/static/js/2.7ec31454.chunk.js",
-    "static/js/2.7ec31454.chunk.js.map": "/air-flow/static/js/2.7ec31454.chunk.js.map",
-    "static/js/3.1d470345.chunk.js": "/air-flow/static/js/3.1d470345.chunk.js",
-    "static/js/3.1d470345.chunk.js.map": "/air-flow/static/js/3.1d470345.chunk.js.map",
+    "main.css": "/air-flow/static/css/main.7d72cf6d.css",
+    "main.js": "/air-flow/static/js/main.e37f1419.js",
+    "static/js/422.adbdbcfc.chunk.js": "/air-flow/static/js/422.adbdbcfc.chunk.js",
     "index.html": "/air-flow/index.html",
-    "static/css/2.03d4f8d2.chunk.css.map": "/air-flow/static/css/2.03d4f8d2.chunk.css.map",
-    "static/css/main.7d180cbf.chunk.css.map": "/air-flow/static/css/main.7d180cbf.chunk.css.map",
-    "static/js/2.7ec31454.chunk.js.LICENSE.txt": "/air-flow/static/js/2.7ec31454.chunk.js.LICENSE.txt"
+    "main.7d72cf6d.css.map": "/air-flow/static/css/main.7d72cf6d.css.map",
+    "main.e37f1419.js.map": "/air-flow/static/js/main.e37f1419.js.map",
+    "422.adbdbcfc.chunk.js.map": "/air-flow/static/js/422.adbdbcfc.chunk.js.map"
   },
   "entrypoints": [
-    "static/js/runtime-main.7e1c2db1.js",
-    "static/css/2.03d4f8d2.chunk.css",
-    "static/js/2.7ec31454.chunk.js",
-    "static/css/main.7d180cbf.chunk.css",
-    "static/js/main.ad6c0006.chunk.js"
+    "static/css/main.7d72cf6d.css",
+    "static/js/main.e37f1419.js"
   ]
 }
