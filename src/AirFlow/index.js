@@ -83,6 +83,7 @@ useEffect(() => {
         },
         (err) => {
           console.log(err);
+
           // Service location denied by user
           // Default Paris
           setGeoloc({
@@ -103,8 +104,12 @@ useEffect(() => {
       if (loadingNameLoc) {
         setNameLocation();
       }
+
+      if (userSpamsApi()) return;
+
       setAirQuality();
       setWeatherLocation();
+      localStorage.setItem("lastFetch", new Date());
       setInitClock(true);
     }
   }, [geoloc.latitude, geoloc.longitude, geoloc.altitude]);
@@ -114,6 +119,7 @@ useEffect(() => {
       const interval = setInterval(() => {
         setAirQuality();
         setWeatherLocation();
+        localStorage.setItem("lastFetch", new Date());
       }, 5*60*1000 ); // Every 5 minutes
       return () => clearInterval(interval); 
     }
@@ -126,6 +132,20 @@ const handleClose = () => {
 };
 
 // Functions -------------------------------------------------------------------------
+
+  // Avoid to spam API
+  const userSpamsApi = () => {
+    const lastFetch = localStorage.getItem("lastFetch");
+    if (lastFetch) {
+      const seconds = moment().diff(moment(lastFetch), 'seconds');
+      if (seconds <= 10) {
+        setState({ ...state, severity: 'warning', message: 'Retry to fetch API later please', open: true });
+        return true;
+      }
+    }
+    return false;
+  }
+
   const setAirQuality = async () => {
 
     try {
@@ -297,7 +317,8 @@ const handleClose = () => {
           grid={{ vertical: true, horizontal: true }}
         />
         <Typography sx={{ alignSelf: 'center' }}>
-          Auto refresh data air quality <strong> on change </strong> ({moment(refreshAt).format("HH:mm:ss")}).
+          Air Flow detects changes in air quality <strong> every 5 minutes </strong> 
+           (last check: <strong> {moment(refreshAt).format("HH:mm:ss")}) </strong>.
         </Typography>
       </Stack>
     </>
