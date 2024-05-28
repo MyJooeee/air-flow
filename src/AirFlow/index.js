@@ -109,7 +109,7 @@ useEffect(() => {
 
       setAirQuality();
       setWeatherLocation();
-      localStorage.setItem("lastFetch", new Date());
+      localStorage.setItem("lastFetch", moment().format("YYYY-MM-DD HH:mm:ss"));
       setInitClock(true);
     }
   }, [geoloc.latitude, geoloc.longitude, geoloc.altitude]);
@@ -119,7 +119,7 @@ useEffect(() => {
       const interval = setInterval(() => {
         setAirQuality();
         setWeatherLocation();
-        localStorage.setItem("lastFetch", new Date());
+        localStorage.setItem("lastFetch", moment().format("YYYY-MM-DD HH:mm:ss"));
       }, 5*60*1000 ); // Every 5 minutes
       return () => clearInterval(interval); 
     }
@@ -318,7 +318,7 @@ const handleClose = () => {
         />
         <Typography sx={{ textAlign: 'center' }}>
           Air Flow detects changes in air quality <strong> every 5 minutes </strong> 
-           (last check: <strong> {moment(refreshAt).format("HH:mm:ss")}) </strong>.
+           (last check : <strong> {moment(refreshAt).format("HH:mm:ss")}) </strong>.
         </Typography>
       </Stack>
     </>
