@@ -82,7 +82,7 @@ useEffect(() => {
           });
         },
         (err) => {
-          console(err);
+          console.log(err);
           // Service location denied by user
           // Default Paris
           setGeoloc({
