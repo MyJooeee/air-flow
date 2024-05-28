@@ -316,7 +316,7 @@ const handleClose = () => {
           margin={{ left: 60, right: 30, top: 30, bottom: 60 }}
           grid={{ vertical: true, horizontal: true }}
         />
-        <Typography sx={{ alignSelf: 'center' }}>
+        <Typography sx={{ textAlign: 'center' }}>
           Air Flow detects changes in air quality <strong> every 5 minutes </strong> 
            (last check: <strong> {moment(refreshAt).format("HH:mm:ss")}) </strong>.
         </Typography>
