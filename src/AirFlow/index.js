@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import moment from 'moment';
 // Components
 import { LineChart } from '@mui/x-charts/LineChart';
-import { Stack, Typography } from '@mui/material';
+import { Alert, Snackbar, Stack, Typography } from '@mui/material';
 import Title from './Title';
 import AirQuality from './AirQuality';
 import Weather from './Weather';
@@ -22,14 +22,22 @@ const AirFlow = () => {
   const weatherFromLocationAPI =
     "https://api.openweathermap.org/data/2.5/weather?&units=metric&appid=" +
     apiKey;
+    const airQuality = [
+      "good quality", // 100%
+      "fair quality", // 80 %
+      "moderate quality", // 60%
+      "poor quality", // 40%
+      "very poor quality", // 20%
+    ];
   const [refreshAt, setRefreshAt] = useState(new Date());
-  const airQuality = [
-    "good quality", // 100%
-    "fair quality", // 80 %
-    "moderate quality", // 60%
-    "poor quality", // 40%
-    "very poor quality", // 20%
-  ];
+  const [state, setState] = useState({
+    open: false,
+    message: null,
+    severity: 'error',
+    vertical: 'top',
+    horizontal: 'right',
+  });
+  const { open , message, severity, vertical, horizontal } = state;
   const [data, setData] = useState ({
     times: [],
     co: [],
@@ -55,7 +63,7 @@ const AirFlow = () => {
 
 
 // Effects -------------------------------------------------------------------------
-  useEffect(() => {
+useEffect(() => {
     if (navigator.geolocation) {
       const options = {
         enableHighAccuracy: true,
@@ -74,6 +82,7 @@ const AirFlow = () => {
           });
         },
         (err) => {
+          console(err);
           // Service location denied by user
           // Default Paris
           setGeoloc({
@@ -83,7 +92,6 @@ const AirFlow = () => {
           });
           setNameLoc('Paris');
           setLoadingNameLoc(false);
-          console.log(err);
         },
         options
       );
@@ -106,73 +114,96 @@ const AirFlow = () => {
       const interval = setInterval(() => {
         setAirQuality();
         setWeatherLocation();
-      }, 60*1000 ); // Every minute
+      }, 5*60*1000 ); // Every 5 minutes
       return () => clearInterval(interval); 
     }
   }, [initClock]);
 
+// Handlers -------------------------------------------------------------------------
 
+const handleClose = () => {
+  setState({ ...state, open: false });
+};
 
 // Functions -------------------------------------------------------------------------
   const setAirQuality = async () => {
 
-    const url = airQualityAPI + "&lat=" + geoloc.latitude + "&lon=" + geoloc.longitude;
-    const result = await fetchApi(url);
+    try {
+      const url = airQualityAPI + "&lat=" + geoloc.latitude + "&lon=" + geoloc.longitude;
+      const result = await fetchApi(url, (err) => {
+        setState({ ...state, message: 'Air quality data API error', open: true });
+        return;
+      });
 
-    let myData = { ...data };
+      let myData = { ...data };
 
-    const co = myData.co;
-    const o3 = myData.o3;
-    const so2 = myData.so2;
-    const pm25 = myData.pm25;
+      const co = myData.co;
+      const o3 = myData.o3;
+      const so2 = myData.so2;
+      const pm25 = myData.pm25;
 
-    const lenCo = co.length;
-    const lenO3 = o3.length;
-    const lenSo2 = so2.length;
-    const lenPm25 = pm25.length;
-    
-    const newCo = result.list[0].components.co;
-    const newO3 = result.list[0].components.o3;
-    const newSo2 = result.list[0].components.so2;
-    const newPm25 = result.list[0].components.pm2_5;
+      const lenCo = co.length;
+      const lenO3 = o3.length;
+      const lenSo2 = so2.length;
+      const lenPm25 = pm25.length;
+      
+      const newCo = result.list[0].components.co;
+      const newO3 = result.list[0].components.o3;
+      const newSo2 = result.list[0].components.so2;
+      const newPm25 = result.list[0].components.pm2_5;
 
-    setRefreshAt(new Date());
-    // Check if data change between two measures
-    if(
-      (lenCo && co[lenCo - 1] === newCo)
-      || (lenO3 && o3[lenO3 - 1] === newO3)
-      || (lenSo2 && so2[lenSo2 - 1] === newSo2)
-      || (lenPm25 && pm25[lenPm25 - 1] === newPm25)
-    ) {
-      return;
-    }
+      setRefreshAt(new Date());
+      // If no data has changed
+      if((lenCo && co[lenCo - 1] === newCo)
+        && (lenO3 && o3[lenO3 - 1] === newO3)
+        && (lenSo2 && so2[lenSo2 - 1] === newSo2)
+        && (lenPm25 && pm25[lenPm25 - 1] === newPm25)
+      ) {
+        return;
+      }
 
-    co.push(newCo);
-    o3.push(newO3);
-    so2.push(newSo2);
-    pm25.push(newPm25);
-    const times = myData.times;
-    times.push(new Date());
+      co.push(newCo);
+      o3.push(newO3);
+      so2.push(newSo2);
+      pm25.push(newPm25);
+      const times = myData.times;
+      times.push(new Date());
 
-    myData = { times, co, o3, so2, pm25 };
+      myData = { times, co, o3, so2, pm25 };
 
-    setData(myData);
-    setIndexQuality(result.list[0].main.aqi);
-    setLoadingAirQuality(false);
+      setData(myData);
+      setIndexQuality(result.list[0].main.aqi);
+      setLoadingAirQuality(false);
+
+  } catch (error) {
+    setState({ ...state, message:  'Air quality data processing error', open: true });
+  }
     
   };
 
   const setNameLocation = async () => {
-    const url = reverseLocationAPI + "&lat=" + geoloc.latitude + "&lon=" + geoloc.longitude;
-    const result = await fetchApi(url);
-    setNameLoc(result[0].name);
-    setLoadingNameLoc(false);
+    try {
+      const url = reverseLocationAPI + "&lat=" + geoloc.latitude + "&lon=" + geoloc.longitude;
+      const result = await fetchApi(url, (err) => {
+        setState({ ...state, message:  'Name location data API error', open: true });
+        return;
+      });
+      setNameLoc(result[0].name);
+      setLoadingNameLoc(false);
+    } catch (error) {
+      setState({ ...state, message:  'Name location data processing error', open: true });
+    }
+    
   };
 
   const setWeatherLocation = async () => {
-    const url =
+    try {
+      const url =
       weatherFromLocationAPI + "&lat=" + geoloc.latitude + "&lon=" + geoloc.longitude;
-    const result = await fetchApi(url);
+      const result = await fetchApi(url, (err) => {
+        setState({ ...state, message:  'Weather location data API error', open: true });
+        return;
+      });
 
     const newMain = result.weather[0].main;
     const newDescription = result.weather[0].description;
@@ -180,12 +211,12 @@ const AirFlow = () => {
     const newTemp = result.main.temp;
     const newHumidity = result.main.humidity;
 
-    // Check if data change between two measures
+    // If no data has changed
     if (weatherLoc.main === newMain
-      || weatherLoc.description === newDescription
-      || weatherLoc.icon === newIcon
-      || weatherLoc.temperature === newTemp
-      || weatherLoc.humidity === newHumidity
+      && weatherLoc.description === newDescription
+      && weatherLoc.icon === newIcon
+      && weatherLoc.temperature === newTemp
+      && weatherLoc.humidity === newHumidity
     ) {
       return;
     }
@@ -199,57 +230,77 @@ const AirFlow = () => {
     };
     setWeatherLoc(weather);
     setLoadingWeather(false);
+    } catch(error) {
+      setState({ ...state, message:  'Weather location data processing error', open: true });
+    }
   };
 
   // JSX -------------------------------------------------------------------------
   return (
-    <Stack>
-      <Stack sx={topContainer}>
-          <Title loading={loadingNameLoc} name={nameLoc}/>
-          <AirQuality 
-            loading={loadingAirQuality} 
-            airQuality={airQuality} 
-            indexQuality={indexQuality}
-          />
-          <Weather loading={loadingWeather} weather={weatherLoc} />
-        <Leaflet geoloc={geoloc} />
+    <>
+      <Snackbar
+          anchorOrigin={{ vertical, horizontal }}
+          autoHideDuration={5000}
+          open={open}
+          onClose={handleClose}
+        >
+          <Alert
+            onClose={handleClose}
+            severity={severity}
+            variant="filled"
+            sx={{ width: '100%' }}
+          >
+            {message}
+          </Alert>
+          </Snackbar>
+      <Stack>
+        <Stack sx={topContainer}>
+            <Title loading={loadingNameLoc} name={nameLoc}/>
+            <AirQuality 
+              loading={loadingAirQuality} 
+              airQuality={airQuality} 
+              indexQuality={indexQuality}
+            />
+            <Weather loading={loadingWeather} weather={weatherLoc} />
+          <Leaflet geoloc={geoloc} />
+        </Stack>
+        <LineChart
+          xAxis={[
+            {
+              label: "Hours",
+              data: data.times,
+              scaleType: "time",
+              valueFormatter: (time) => moment(time).format("HH:mm:ss")
+            },
+          ]}
+          yAxis={[{ label: "Concentration of particles, μg/m3" }]}
+          series={[
+            {
+              label: "CO (Carbon monoxide)",
+              data: data.co,
+            },
+            {
+              label: "O3 (Ozone)",
+              data: data.o3,
+            },
+            {
+              label: "SO2 (Sulphur dioxide)",
+              data: data.so2,
+            },
+            {
+              label: "PM2.5 (Fine particles matter)",
+              data: data.pm25,
+            }
+          ]}
+          height={400}
+          margin={{ left: 60, right: 30, top: 30, bottom: 60 }}
+          grid={{ vertical: true, horizontal: true }}
+        />
+        <Typography sx={{ alignSelf: 'center' }}>
+          Auto refresh data air quality <strong> on change </strong> ({moment(refreshAt).format("HH:mm:ss")}).
+        </Typography>
       </Stack>
-      <LineChart
-        xAxis={[
-          {
-            label: "Hours",
-            data: data.times,
-            scaleType: "time",
-            valueFormatter: (time) => moment(time).format("HH:mm:ss")
-          },
-        ]}
-        yAxis={[{ label: "Concentration of particles, μg/m3" }]}
-        series={[
-          {
-            label: "CO (Carbon monoxide)",
-            data: data.co,
-          },
-          {
-            label: "O3 (Ozone)",
-            data: data.o3,
-          },
-          {
-            label: "SO2 (Sulphur dioxide)",
-            data: data.so2,
-          },
-          {
-            label: "PM2.5 (Fine particles matter)",
-            data: data.pm25,
-          }
-        ]}
-        height={400}
-        margin={{ left: 60, right: 30, top: 30, bottom: 60 }}
-        grid={{ vertical: true, horizontal: true }}
-      />
-      <Typography sx={{ alignSelf: 'center' }}>
-        Auto refresh data air quality <strong> on change </strong> ({moment(refreshAt).format("HH:mm:ss")}).
-      </Typography>
-    </Stack>
+    </>
   );
 };
 

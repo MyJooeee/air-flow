@@ -1,4 +1,4 @@
-const fetchApi = (url) => {
+const fetchApi = (url, callback) => {
     return fetch(url)
       .then((res) => res.json())
       .then(
@@ -7,7 +7,7 @@ const fetchApi = (url) => {
         },
         (error) => {
             console.log(error);
-            return error;
+            callback(error)
         }
       );
   };
