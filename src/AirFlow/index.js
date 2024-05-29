@@ -10,11 +10,13 @@ import Weather from './Weather';
 import Leaflet from '../Leaflet';
 // Logic
 import { fetchApi } from '../Promises';
+import { useMediaQueries } from '../hooks/useCustomHooks';
 
 // ---------------------------------------------------------------------------------
 
 const AirFlow = () => {
   const apiKey = process.env.REACT_APP_API_KEY;
+  const { isMobile } = useMediaQueries();
   const airQualityAPI =
     "https://api.openweathermap.org/data/2.5/air_pollution?appid=" + apiKey;
   const reverseLocationAPI =
@@ -144,7 +146,7 @@ const handleClose = () => {
       }
     }
     return false;
-  }
+  };
 
   const setAirQuality = async () => {
 
@@ -195,10 +197,9 @@ const handleClose = () => {
       setIndexQuality(result.list[0].main.aqi);
       setLoadingAirQuality(false);
 
-  } catch (error) {
-    setState({ ...state, message:  'Air quality data processing error', open: true });
-  }
-    
+    } catch (error) {
+      setState({ ...state, message:  'Air quality data processing error', open: true });
+    }
   };
 
   const setNameLocation = async () => {
@@ -313,12 +314,12 @@ const handleClose = () => {
             }
           ]}
           height={400}
-          margin={{ left: 60, right: 30, top: 30, bottom: 60 }}
+          margin={{ left: 50, right: 40, top: 50, bottom: 50 }}
           grid={{ vertical: true, horizontal: true }}
         />
         <Typography sx={{ textAlign: 'center' }}>
-          Air Flow detects changes in air quality <strong> every 5 minutes </strong> 
-           (last check : <strong> {moment(refreshAt).format("HH:mm:ss")}) </strong>.
+          <strong> Air Flow </strong> {!isMobile ? 'detects changes in' : ''} air quality  
+           (checked at : <strong> {moment(refreshAt).format("HH:mm:ss")}</strong>).
         </Typography>
       </Stack>
     </>

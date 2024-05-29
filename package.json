@@ -1,6 +1,6 @@
 {
   "name": "air-flow",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "homepage": "https://MyJooeee.github.io/air-flow",
   "private": true,
   "engines": {
@@ -10,7 +10,7 @@
     "@emotion/css": "^11.11.2",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
-    "@mui/material": "^5.15.18",
+    "@mui/material": "^5.15.19",
     "@mui/x-charts": "^7.5.1",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^11.2.7",
