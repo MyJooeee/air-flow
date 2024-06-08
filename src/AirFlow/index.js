@@ -15,6 +15,7 @@ import { useMediaQueries } from '../hooks/useCustomHooks';
 // ---------------------------------------------------------------------------------
 
 const AirFlow = () => {
+  const appVersion = process.env.REACT_APP_VERSION;
   const apiKey = process.env.REACT_APP_API_KEY;
   const { isMobile } = useMediaQueries();
   const airQualityAPI =
@@ -317,10 +318,15 @@ const handleClose = () => {
           margin={{ left: 50, right: 40, top: 50, bottom: 50 }}
           grid={{ vertical: true, horizontal: true }}
         />
-        <Typography sx={{ textAlign: 'center' }}>
-          <strong> Air Flow </strong> {!isMobile ? 'detects changes in' : ''} air quality  
-           (checked at : <strong> {moment(refreshAt).format("HH:mm:ss")}</strong>).
-        </Typography>
+        <Stack sx={{ gap: 2 }}> 
+          <Typography sx={{ textAlign: 'center' }}>
+            <strong> Air Flow </strong> {!isMobile ? 'detects changes in' : ''} air quality  
+            (checked at : <strong> {moment(refreshAt).format("HH:mm:ss")}</strong>).
+          </Typography>
+          <Typography variant='caption' sx={{ textAlign: 'center' }}>
+            © 2024 Jonathan Dancette, all rights reserved. | v{appVersion}
+          </Typography>
+        </Stack>
       </Stack>
     </>
   );

@@ -6,7 +6,7 @@ import { Skeleton, Typography } from '@mui/material';
 const Title = ({ loading, name }) => {
   if (loading) return <Skeleton width={150} height={80} />;
     const title = "Air quality in";
-    return <Typography variant='h4'> {title} {name} </Typography>;
+    return <Typography variant='h4' sx={{ textAlign: 'center' }}> {title} {name} </Typography>;
   };
 
   Title.propTypes = {
