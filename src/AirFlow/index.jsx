@@ -265,11 +265,10 @@ const AirFlow = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-      <Stack sx={{ gap: 3, px: { xs: 2, sm: 3 }, py: 2, maxWidth: 1280, mx: 'auto', position: 'relative' }}>
-        <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}>
-          <ThemeToggle />
-        </Box>
+      <Stack sx={{ gap: 3, px: { xs: 2, sm: 3 }, py: 2, maxWidth: 1280, mx: 'auto' }}>
         <Stack sx={topContainer}>
+          {/* Dans le flux, juste avant le titre : il ne peut chevaucher aucun élément */}
+          <ThemeToggle />
           <Title loading={!nameLoc} name={nameLoc} />
           <AirQuality loading={!air.current && !problem} indexQuality={air.current?.aqi} />
           {(weatherLoc || !problem) && <Weather loading={!weatherLoc} weather={weatherLoc} />}
