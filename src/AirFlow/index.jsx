@@ -11,12 +11,13 @@ import Leaflet from '../Leaflet';
 // Logic
 import { fetchApi } from '../Promises';
 import { useMediaQueries } from '../hooks/useCustomHooks';
+import { version } from '../../package.json';
 
 // ---------------------------------------------------------------------------------
 
 const AirFlow = () => {
-  const appVersion = process.env.REACT_APP_VERSION;
-  const apiKey = process.env.REACT_APP_API_KEY;
+  const appVersion = version;
+  const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY;
   const { isMobile } = useMediaQueries();
   const airQualityAPI =
     "https://api.openweathermap.org/data/2.5/air_pollution?appid=" + apiKey;
