@@ -127,8 +127,7 @@ const AirFlow = () => {
         setGeoloc({
           latitude: coords.latitude,
           longitude: coords.longitude,
-          altitude: coords.altitude,
-          altitudeAccuracy: coords.altitudeAccuracy,
+          altitude: coords.altitude
         });
       },
       () => setGeoloc(PARIS),

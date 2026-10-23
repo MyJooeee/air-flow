@@ -19,10 +19,7 @@ const Leaflet = ({ geoloc }) => {
   if (!geoloc) return null;
 
   const geolocation = [geoloc.latitude, geoloc.longitude];
-  // Une altitude mesurée vient toujours avec sa précision : sans elle, l'altitude est
-  // vide, ou à 0 sur certains navigateurs. Le marqueur n'a alors rien à montrer,
-  // donc pas de main au survol ni de clic
-  const hasAltitude = geoloc.altitude != null && geoloc.altitudeAccuracy > 0;
+  const hasAltitude = geoloc.altitude != null && geoloc.altitude !== 0;
 
   return (
     <MapContainer
