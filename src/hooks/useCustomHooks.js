@@ -1,4 +1,4 @@
-import { useTheme } from '@mui/material/styles';
+import { useColorScheme, useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
 const useMediaQueries = () => {
@@ -8,4 +8,10 @@ const useMediaQueries = () => {
   return { isMobile };
 };
 
-export { useMediaQueries };
+// Le mode réellement affiché : celui choisi, ou celui du système quand rien n'est forcé
+const useIsDarkMode = () => {
+  const { mode, systemMode } = useColorScheme();
+  return (mode === 'system' ? systemMode : mode) === 'dark';
+};
+
+export { useMediaQueries, useIsDarkMode };

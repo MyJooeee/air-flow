@@ -6,11 +6,12 @@ import Title from './Title';
 import AirQuality from './AirQuality';
 import Weather from './Weather';
 import PollutantCard from './PollutantCard';
+import ThemeToggle from './ThemeToggle';
 import Leaflet from '../Leaflet';
 // Logic
 import { fetchApi } from '../Promises';
-import { useMediaQueries } from '../hooks/useCustomHooks';
-import { LEVELS, POLLUTANTS } from './pollutants';
+import { useIsDarkMode, useMediaQueries } from '../hooks/useCustomHooks';
+import { CHART_INK, LEVELS, POLLUTANTS } from './pollutants';
 import { version } from '../../package.json';
 
 // ---------------------------------------------------------------------------------
@@ -24,7 +25,8 @@ const SERIES_DELAY = 60 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
 const LAST_FETCH_KEY = 'lastFetch';
 const CACHE_KEY = 'airFlowCache';
-const PARIS = { latitude: 48.856614, longitude: 2.3522219, altitude: 35, name: 'Paris' };
+// Position par défaut : sans mesure, donc sans altitude
+const PARIS = { latitude: 48.856614, longitude: 2.3522219, name: 'Paris' };
 const EMPTY_AIR = { current: null, history: [], forecast: [], seriesAt: 0 };
 
 const formatTime = (date) => new Date(date).toLocaleTimeString('en-GB'); // HH:mm:ss
@@ -104,7 +106,12 @@ const AirFlow = () => {
 
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
-        setGeoloc({ latitude: coords.latitude, longitude: coords.longitude, altitude: coords.altitude });
+        setGeoloc({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          altitude: coords.altitude,
+          altitudeAccuracy: coords.altitudeAccuracy,
+        });
       },
       () => setGeoloc(PARIS),
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
@@ -121,6 +128,13 @@ const AirFlow = () => {
     const cached = samePlace(cache, latitude, longitude) && cache.air?.current ? cache : null;
     let seriesAt = cached?.air?.seriesAt ?? 0;
     let interval = null;
+
+    // Les dernières données reçues ici s'affichent tout de suite ; le cycle ne rappelle
+    // ensuite que ce qui a vieilli (5 min pour la mesure, 1 h pour l'historique et la prévision)
+    if (cached) {
+      setAir(cached.air);
+      setWeatherLoc(cached.weatherLoc);
+    }
 
     // Le nom du lieu ne change pas : demandé une seule fois
     if (geolocName) {
@@ -189,14 +203,10 @@ const AirFlow = () => {
       return () => clearInterval(interval);
     }
 
-    // Trop tôt pour rappeler l'API : on réaffiche les dernières données reçues,
+    // Trop tôt pour rappeler l'API : les dernières données restent affichées,
     // et le cycle reprend quand les 5 minutes sont écoulées
-    if (cached) {
-      setAir(cached.air);
-      setWeatherLoc(cached.weatherLoc);
-      setRefreshAt(lastFetch);
-    }
-    notify(`Data from ${formatTime(lastFetch)}. Retry in ${formatDelay(REFRESH_DELAY - elapsed)}.`, 'warning');
+    if (cached) setRefreshAt(lastFetch);
+    notify(`Data from ${formatTime(lastFetch)}. Retry in ${formatDelay(REFRESH_DELAY - elapsed)}.`, 'info');
     const timeout = setTimeout(startCycle, REFRESH_DELAY - elapsed);
 
     return () => {
@@ -219,7 +229,7 @@ const AirFlow = () => {
   return (
     <>
       <Snackbar
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         autoHideDuration={5000}
         open={snackbar.open}
         onClose={handleClose}
@@ -233,7 +243,10 @@ const AirFlow = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-      <Stack sx={{ gap: 3, px: { xs: 2, sm: 3 }, py: 2, maxWidth: 1280, mx: 'auto' }}>
+      <Stack sx={{ gap: 3, px: { xs: 2, sm: 3 }, py: 2, maxWidth: 1280, mx: 'auto', position: 'relative' }}>
+        <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}>
+          <ThemeToggle />
+        </Box>
         <Stack sx={topContainer}>
           <Title loading={!nameLoc} name={nameLoc} />
           <AirQuality loading={!air.current} indexQuality={air.current?.aqi} />
@@ -273,22 +286,26 @@ export default AirFlow;
 
 // Local components -------------------------------------------------------------------------
 
-const Legend = () => (
-  <Stack direction="row" sx={{ flexWrap: 'wrap', gap: '8px 24px', color: 'text.secondary', fontSize: 13 }}>
-    <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
-      <Box sx={{ width: 22, borderTop: '2.5px solid #2C6A9E' }} />Measured, last 24 h
-    </Stack>
-    <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
-      <Box sx={{ width: 22, borderTop: '2.5px dashed #2C6A9E' }} />Forecast, next 24 h
-    </Stack>
-    <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
-      <Stack direction="row" sx={{ borderRadius: 1, overflow: 'hidden' }}>
-        {LEVELS.map((level) => <Box key={level.label} sx={{ width: 18, height: 10, bgcolor: level.color }} />)}
+const Legend = () => {
+  const ink = useIsDarkMode() ? CHART_INK.dark : CHART_INK.light;
+
+  return (
+    <Stack direction="row" sx={{ flexWrap: 'wrap', gap: '8px 24px', color: 'text.secondary', fontSize: 13 }}>
+      <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
+        <Box sx={{ width: 22, borderTop: `2.5px solid ${ink}` }} />Measured, last 24 h
       </Stack>
-      OpenWeather index: Good → Very poor
+      <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
+        <Box sx={{ width: 22, borderTop: `2.5px dashed ${ink}` }} />Forecast, next 24 h
+      </Stack>
+      <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
+        <Stack direction="row" sx={{ borderRadius: 1, overflow: 'hidden' }}>
+          {LEVELS.map((level) => <Box key={level.label} sx={{ width: 18, height: 10, bgcolor: level.color }} />)}
+        </Stack>
+        OpenWeather index: Good → Very poor
+      </Stack>
     </Stack>
-  </Stack>
-);
+  );
+};
 
 // Styles -------------------------------------------------------------------------
 const topContainer = {

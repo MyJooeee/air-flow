@@ -7,6 +7,9 @@ const LEVELS = [
   { label: 'Very poor', color: '#D63C36' },
 ];
 
+// Couleur des courbes, plus claire sur fond sombre
+const CHART_INK = { light: '#2C6A9E', dark: '#7DB4E8' };
+
 // Seuils de l'indice OpenWeather, en µg/m³ : bornes hautes de Good, Fair, Moderate et Poor
 const POLLUTANTS = [
   { id: 'pm2_5', name: 'PM2.5', longName: 'Fine particles', thresholds: [10, 25, 50, 75] },
@@ -32,4 +35,4 @@ const scaleMax = (values, thresholds) => {
 
 const formatValue = (value) => (value >= 100 ? Math.round(value).toString() : value.toFixed(1));
 
-export { LEVELS, POLLUTANTS, levelOf, scaleMax, formatValue };
+export { CHART_INK, LEVELS, POLLUTANTS, levelOf, scaleMax, formatValue };

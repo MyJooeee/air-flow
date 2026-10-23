@@ -10,11 +10,12 @@ import { ChartsAxisHighlight } from '@mui/x-charts/ChartsAxisHighlight';
 import { ChartsReferenceLine } from '@mui/x-charts/ChartsReferenceLine';
 import { ChartsTooltip } from '@mui/x-charts/ChartsTooltip';
 import { useDrawingArea, useXScale, useYScale } from '@mui/x-charts/hooks';
+import { useTheme } from '@mui/material/styles';
 // Logic
-import { LEVELS, levelOf, scaleMax, formatValue } from './pollutants';
+import { CHART_INK, LEVELS, levelOf, scaleMax, formatValue } from './pollutants';
+import { useIsDarkMode } from '../hooks/useCustomHooks';
 
 // ---------------------------------------------------------------------------------
-const INK = '#2C6A9E';
 const HOUR = 3600 * 1000;
 
 const formatHour = (date) => new Date(date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -33,6 +34,7 @@ const sixHourTicks = (start, end) => {
 
 const PollutantCard = ({ pollutant, times, measured, forecast, now }) => {
   const gradientId = useId();
+  const ink = useIsDarkMode() ? CHART_INK.dark : CHART_INK.light;
   const { name, longName, thresholds } = pollutant;
   const nowIndex = measured.findLastIndex((value) => value != null);
   const current = measured[nowIndex];
@@ -98,16 +100,16 @@ const PollutantCard = ({ pollutant, times, measured, forecast, now }) => {
             valueFormatter: (value) => formatValue(value),
           }]}
           series={[
-            { id: 'measured', type: 'line', data: measured, color: INK, area: true, showMark: false, label: 'Measured',
+            { id: 'measured', type: 'line', data: measured, color: ink, area: true, showMark: false, label: 'Measured',
               valueFormatter: (value) => (value == null ? null : `${formatValue(value)} µg/m³`) },
-            { id: 'forecast', type: 'line', data: forecast, color: INK, area: true, showMark: false, label: 'Forecast',
+            { id: 'forecast', type: 'line', data: forecast, color: ink, area: true, showMark: false, label: 'Forecast',
               valueFormatter: (value) => (value == null ? null : `${formatValue(value)} µg/m³`) },
           ]}
         >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor={INK} stopOpacity={0.28} />
-              <stop offset="1" stopColor={INK} stopOpacity={0} />
+              <stop offset="0" stopColor={ink} stopOpacity={0.28} />
+              <stop offset="1" stopColor={ink} stopOpacity={0} />
             </linearGradient>
           </defs>
           <LevelBands thresholds={thresholds} max={max} />
@@ -130,7 +132,7 @@ const PollutantCard = ({ pollutant, times, measured, forecast, now }) => {
           />
           <ChartsAxisHighlight x="line" />
           <ChartsAxis />
-          <NowDot time={times[nowIndex]} value={current} />
+          <NowDot time={times[nowIndex]} value={current} color={ink} />
           <ChartsTooltip trigger="axis" />
         </ChartsContainer>
       </Box>
@@ -201,15 +203,24 @@ LevelBands.propTypes = {
   max: PropTypes.number
 };
 
-const NowDot = ({ time, value }) => {
+const NowDot = ({ time, value, color }) => {
   const xScale = useXScale();
   const yScale = useYScale();
+  const theme = useTheme();
   return (
-    <circle cx={xScale(new Date(time))} cy={yScale(value)} r={4.5} fill="#fff" stroke={INK} strokeWidth={2.4} />
+    <circle
+      cx={xScale(new Date(time))}
+      cy={yScale(value)}
+      r={4.5}
+      style={{ fill: theme.vars.palette.background.paper }}
+      stroke={color}
+      strokeWidth={2.4}
+    />
   );
 };
 
 NowDot.propTypes = {
   time: PropTypes.number,
-  value: PropTypes.number
+  value: PropTypes.number,
+  color: PropTypes.string
 };
