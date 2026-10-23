@@ -1,20 +1,31 @@
 import PropTypes from 'prop-types';
-import { Skeleton, Typography } from '@mui/material';
+import { Box, Skeleton, Stack, Typography } from '@mui/material';
+import { LEVELS } from './pollutants';
 
 // ---------------------------------------------------------------------------------
-
-const AirQuality = ({ loading, airQuality, indexQuality}) => {
+// L'indice OpenWeather (1 à 5), celui du polluant le plus mauvais
+const AirQuality = ({ loading, indexQuality }) => {
   if (loading) return <Skeleton width={150} height={40} />;
-    const quality = "Quality :";
-    if (indexQuality === 0) return null;
-    let percentage = " (" + ((6 - indexQuality) / 5) * 100 + "%)";
-    return <Typography variant='h5' sx={{ textAlign: 'center' }}> {quality} {airQuality[indexQuality - 1]} {percentage} </Typography>;
-  };
+  if (!indexQuality) return null;
 
-  AirQuality.propTypes = {
-    loading: PropTypes.bool,
-    airQuality: PropTypes.array,
-    indexQuality: PropTypes.number
-  };
+  const level = LEVELS[indexQuality - 1];
+
+  return (
+    <Stack
+      direction="row"
+      sx={{ alignItems: 'center', gap: 1, pl: 1.5, pr: 2, py: 0.5, borderRadius: 999, border: 1, borderColor: 'divider' }}
+    >
+      <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: level.color }} />
+      <Typography variant="h6" component="span">
+        {indexQuality}/5 · {level.label}
+      </Typography>
+    </Stack>
+  );
+};
+
+AirQuality.propTypes = {
+  loading: PropTypes.bool,
+  indexQuality: PropTypes.number
+};
 
 export default AirQuality;

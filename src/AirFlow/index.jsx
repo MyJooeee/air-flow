@@ -1,15 +1,16 @@
 // Core
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 // Components
-import { LineChart } from '@mui/x-charts/LineChart';
-import { Alert, Snackbar, Stack, Typography } from '@mui/material';
+import { Alert, Box, Skeleton, Snackbar, Stack, Typography } from '@mui/material';
 import Title from './Title';
 import AirQuality from './AirQuality';
 import Weather from './Weather';
+import PollutantCard from './PollutantCard';
 import Leaflet from '../Leaflet';
 // Logic
 import { fetchApi } from '../Promises';
 import { useMediaQueries } from '../hooks/useCustomHooks';
+import { LEVELS, POLLUTANTS } from './pollutants';
 import { version } from '../../package.json';
 
 // ---------------------------------------------------------------------------------
@@ -18,17 +19,13 @@ const API_URL = 'https://api.openweathermap.org';
 // La clé gratuite est partagée par tous les visiteurs : une actualisation toutes les
 // 5 minutes, jamais plus souvent, même en rechargeant la page
 const REFRESH_DELAY = 5 * 60 * 1000;
+// L'historique et la prévision sont horaires : les relire plus souvent ne rapporte rien
+const SERIES_DELAY = 60 * 60 * 1000;
+const HOUR = 60 * 60 * 1000;
 const LAST_FETCH_KEY = 'lastFetch';
 const CACHE_KEY = 'airFlowCache';
 const PARIS = { latitude: 48.856614, longitude: 2.3522219, altitude: 35, name: 'Paris' };
-const AIR_QUALITY = [
-  'good quality', // 100%
-  'fair quality', // 80 %
-  'moderate quality', // 60%
-  'poor quality', // 40%
-  'very poor quality', // 20%
-];
-const EMPTY_DATA = { times: [], co: [], o3: [], so2: [], pm25: [] };
+const EMPTY_AIR = { current: null, history: [], forecast: [], seriesAt: 0 };
 
 const formatTime = (date) => new Date(date).toLocaleTimeString('en-GB'); // HH:mm:ss
 
@@ -58,26 +55,7 @@ const writeStorage = (key, value) => {
 const samePlace = (cache, latitude, longitude) =>
   cache && Math.abs(cache.latitude - latitude) < 0.01 && Math.abs(cache.longitude - longitude) < 0.01;
 
-// Un point n'est ajouté au graphe que si une mesure a changé
-const appendPoint = (prev, components) => {
-  const last = prev.times.length - 1;
-  if (last >= 0
-    && prev.co[last] === components.co
-    && prev.o3[last] === components.o3
-    && prev.so2[last] === components.so2
-    && prev.pm25[last] === components.pm2_5
-  ) {
-    return prev;
-  }
-
-  return {
-    times: [...prev.times, Date.now()],
-    co: [...prev.co, components.co],
-    o3: [...prev.o3, components.o3],
-    so2: [...prev.so2, components.so2],
-    pm25: [...prev.pm25, components.pm2_5],
-  };
-};
+const toPoint = (item) => ({ dt: item.dt * 1000, aqi: item.main.aqi, components: item.components });
 
 const toWeather = (result) => ({
   main: result.weather[0].main,
@@ -87,17 +65,34 @@ const toWeather = (result) => ({
   humidity: result.main.humidity,
 });
 
+// 24 h mesurées, la mesure courante, 24 h prévues : deux séries par polluant qui se
+// rejoignent sur la mesure courante (trait plein, puis pointillés)
+const buildTimeline = ({ current, history, forecast }) => {
+  if (!current) return null;
+
+  const now = current.dt;
+  const past = history.filter((point) => point.dt < now && point.dt >= now - 24 * HOUR);
+  const next = forecast.filter((point) => point.dt > now && point.dt <= now + 24 * HOUR);
+  const times = [...past.map((point) => point.dt), now, ...next.map((point) => point.dt)];
+  const series = Object.fromEntries(POLLUTANTS.map(({ id }) => [id, {
+    measured: [...past.map((point) => point.components[id]), current.components[id], ...next.map(() => null)],
+    forecast: [...past.map(() => null), current.components[id], ...next.map((point) => point.components[id])],
+  }]));
+
+  return { now, times, series };
+};
+
 const AirFlow = () => {
   const { isMobile } = useMediaQueries();
   const [snackbar, setSnackbar] = useState({ open: false, message: null, severity: 'error' });
   const [geoloc, setGeoloc] = useState(null);
   const [nameLoc, setNameLoc] = useState(null);
   const [weatherLoc, setWeatherLoc] = useState(null);
-  const [indexQuality, setIndexQuality] = useState(0);
-  const [data, setData] = useState(EMPTY_DATA);
+  const [air, setAir] = useState(EMPTY_AIR);
   const [refreshAt, setRefreshAt] = useState(null);
 
   const { latitude, longitude, name: geolocName } = geoloc ?? {};
+  const timeline = useMemo(() => buildTimeline(air), [air]);
 
 // Effects -------------------------------------------------------------------------
   useEffect(() => {
@@ -122,7 +117,9 @@ const AirFlow = () => {
     const query = `lat=${latitude}&lon=${longitude}&appid=${API_KEY}`;
     const notify = (message, severity = 'error') => setSnackbar({ open: true, message, severity });
     const cache = readStorage(CACHE_KEY);
-    const cached = samePlace(cache, latitude, longitude) ? cache : null;
+    // Un cache d'un autre endroit, ou d'un ancien format, est ignoré
+    const cached = samePlace(cache, latitude, longitude) && cache.air?.current ? cache : null;
+    let seriesAt = cached?.air?.seriesAt ?? 0;
     let interval = null;
 
     // Le nom du lieu ne change pas : demandé une seule fois
@@ -137,26 +134,45 @@ const AirFlow = () => {
     }
 
     const refresh = async () => {
-      writeStorage(LAST_FETCH_KEY, Date.now());
-      setRefreshAt(Date.now());
+      const startedAt = Date.now();
+      const needSeries = startedAt - seriesAt >= SERIES_DELAY;
+      const end = Math.floor(startedAt / 1000);
+      writeStorage(LAST_FETCH_KEY, startedAt);
+      setRefreshAt(startedAt);
 
-      const [air, weather] = await Promise.allSettled([
+      const [current, weather, history, forecast] = await Promise.allSettled([
         fetchApi(`${API_URL}/data/2.5/air_pollution?${query}`),
         fetchApi(`${API_URL}/data/2.5/weather?units=metric&${query}`),
+        ...(needSeries ? [
+          fetchApi(`${API_URL}/data/2.5/air_pollution/history?start=${end - 24 * 3600}&end=${end}&${query}`),
+          fetchApi(`${API_URL}/data/2.5/air_pollution/forecast?${query}`),
+        ] : []),
       ]);
 
-      if (air.status === 'fulfilled') {
-        const { main, components } = air.value.list[0];
-        setIndexQuality(main.aqi);
-        setData((prev) => appendPoint(prev, components));
+      if (current.status === 'fulfilled') {
+        setAir((prev) => ({ ...prev, current: toPoint(current.value.list[0]) }));
       } else {
-        notify(`Air quality unavailable (${air.reason.message})`);
+        notify(`Air quality unavailable (${current.reason.message})`);
       }
 
       if (weather.status === 'fulfilled') {
         setWeatherLoc(toWeather(weather.value));
       } else {
         notify(`Weather unavailable (${weather.reason.message})`);
+      }
+
+      if (needSeries) {
+        if (history.status === 'fulfilled' && forecast.status === 'fulfilled') {
+          seriesAt = startedAt;
+          setAir((prev) => ({
+            ...prev,
+            history: history.value.list.map(toPoint),
+            forecast: forecast.value.list.map(toPoint),
+            seriesAt,
+          }));
+        } else {
+          notify(`History or forecast unavailable (${(history.reason ?? forecast.reason).message})`);
+        }
       }
     };
 
@@ -176,9 +192,8 @@ const AirFlow = () => {
     // Trop tôt pour rappeler l'API : on réaffiche les dernières données reçues,
     // et le cycle reprend quand les 5 minutes sont écoulées
     if (cached) {
-      setIndexQuality(cached.indexQuality);
+      setAir(cached.air);
       setWeatherLoc(cached.weatherLoc);
-      setData(cached.data);
       setRefreshAt(lastFetch);
     }
     notify(`Data from ${formatTime(lastFetch)}. Retry in ${formatDelay(REFRESH_DELAY - elapsed)}.`, 'warning');
@@ -191,9 +206,9 @@ const AirFlow = () => {
   }, [latitude, longitude, geolocName]);
 
   useEffect(() => {
-    if (!indexQuality || latitude == null) return;
-    writeStorage(CACHE_KEY, { latitude, longitude, nameLoc, indexQuality, weatherLoc, data });
-  }, [latitude, longitude, nameLoc, indexQuality, weatherLoc, data]);
+    if (!air.current || latitude == null) return;
+    writeStorage(CACHE_KEY, { latitude, longitude, nameLoc, weatherLoc, air });
+  }, [latitude, longitude, nameLoc, weatherLoc, air]);
 
 // Handlers -------------------------------------------------------------------------
   const handleClose = () => {
@@ -218,52 +233,28 @@ const AirFlow = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-      <Stack>
+      <Stack sx={{ gap: 3, px: { xs: 2, sm: 3 }, py: 2, maxWidth: 1280, mx: 'auto' }}>
         <Stack sx={topContainer}>
           <Title loading={!nameLoc} name={nameLoc} />
-          <AirQuality
-            loading={!indexQuality}
-            airQuality={AIR_QUALITY}
-            indexQuality={indexQuality}
-          />
+          <AirQuality loading={!air.current} indexQuality={air.current?.aqi} />
           <Weather loading={!weatherLoc} weather={weatherLoc} />
           <Leaflet geoloc={geoloc} />
         </Stack>
-        <LineChart
-          xAxis={[
-            {
-              label: 'Hours',
-              data: data.times.map((time) => new Date(time)),
-              scaleType: 'time',
-              valueFormatter: (time) => formatTime(time),
-            },
-          ]}
-          yAxis={[{ label: 'Concentration of particles, μg/m3' }]}
-          series={[
-            {
-              label: 'CO (Carbon monoxide)',
-              showMark: true,
-              data: data.co,
-            },
-            {
-              label: 'O3 (Ozone)',
-              showMark: true,
-              data: data.o3,
-            },
-            {
-              label: 'SO2 (Sulphur dioxide)',
-              showMark: true,
-              data: data.so2,
-            },
-            {
-              label: 'PM2.5 (Fine particles matter)',
-              showMark: true,
-              data: data.pm25,
-            }
-          ]}
-          height={400}
-          grid={{ vertical: true, horizontal: true }}
-        />
+        <Legend />
+        <Box sx={cardsGrid}>
+          {POLLUTANTS.map((pollutant) => (timeline ? (
+            <PollutantCard
+              key={pollutant.id}
+              pollutant={pollutant}
+              times={timeline.times}
+              measured={timeline.series[pollutant.id].measured}
+              forecast={timeline.series[pollutant.id].forecast}
+              now={timeline.now}
+            />
+          ) : (
+            <Skeleton key={pollutant.id} variant="rounded" height={268} />
+          )))}
+        </Box>
         <Stack sx={{ gap: 2 }}>
           <Typography sx={{ textAlign: 'center' }}>
             <strong> Air Flow </strong> {!isMobile ? 'detects changes in' : ''} air quality
@@ -278,11 +269,37 @@ const AirFlow = () => {
   );
 };
 
+export default AirFlow;
+
+// Local components -------------------------------------------------------------------------
+
+const Legend = () => (
+  <Stack direction="row" sx={{ flexWrap: 'wrap', gap: '8px 24px', color: 'text.secondary', fontSize: 13 }}>
+    <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
+      <Box sx={{ width: 22, borderTop: '2.5px solid #2C6A9E' }} />Measured, last 24 h
+    </Stack>
+    <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
+      <Box sx={{ width: 22, borderTop: '2.5px dashed #2C6A9E' }} />Forecast, next 24 h
+    </Stack>
+    <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
+      <Stack direction="row" sx={{ borderRadius: 1, overflow: 'hidden' }}>
+        {LEVELS.map((level) => <Box key={level.label} sx={{ width: 18, height: 10, bgcolor: level.color }} />)}
+      </Stack>
+      OpenWeather index: Good → Very poor
+    </Stack>
+  </Stack>
+);
+
 // Styles -------------------------------------------------------------------------
 const topContainer = {
   flexFlow: 'row wrap',
   alignItems: 'center',
   justifyContent: 'space-around',
+  gap: 2,
 };
 
-export default AirFlow;
+const cardsGrid = {
+  display: 'grid',
+  gap: 2,
+  gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(3, minmax(0, 1fr))' },
+};
