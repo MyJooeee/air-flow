@@ -3,20 +3,20 @@
   "version": "2.0.2",
   "homepage": "https://MyJooeee.github.io/air-flow",
   "private": true,
+  "type": "module",
   "engines": {
     "node": ">=20.19"
   },
   "dependencies": {
-    "@emotion/react": "^11.11.4",
-    "@emotion/styled": "^11.11.5",
-    "@mui/material": "^5.15.19",
-    "@mui/x-charts": "^7.6.2",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^9.5.0",
+    "@mui/x-charts": "^9.16.0",
     "leaflet": "^1.9.4",
-    "moment": "^2.30.1",
     "prop-types": "^15.8.1",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "react-leaflet": "^3.2.5"
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-leaflet": "^5.0.0"
   },
   "scripts": {
     "start": "vite",
