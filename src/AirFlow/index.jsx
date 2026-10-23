@@ -23,8 +23,10 @@ const REFRESH_DELAY = 5 * 60 * 1000;
 // L'historique et la prévision sont horaires : les relire plus souvent ne rapporte rien
 const SERIES_DELAY = 60 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
-const LAST_FETCH_KEY = 'lastFetch';
-const CACHE_KEY = 'airFlowCache';
+// Toutes les applis de myjooeee.github.io partagent la même origine, donc le même
+// localStorage : les clés sont préfixées pour ne jamais en croiser une autre
+const LAST_FETCH_KEY = 'airFlow:lastFetch';
+const CACHE_KEY = 'airFlow:cache';
 // Position par défaut : sans mesure, donc sans altitude
 const PARIS = { latitude: 48.856614, longitude: 2.3522219, name: 'Paris' };
 const EMPTY_AIR = { current: null, history: [], forecast: [], seriesAt: 0 };
@@ -61,6 +63,10 @@ const writeStorage = (key, value) => {
     // rien à faire : le cache n'est qu'un confort
   }
 };
+
+// Position stockée arrondie à 0,01° (environ 1 km) : le cache n'a pas besoin de plus,
+// et la position exacte du visiteur ne reste pas dans son navigateur
+const roundCoordinate = (value) => Math.round(value * 100) / 100;
 
 // Le cache ne vaut que pour le même endroit (à environ un kilomètre près)
 const samePlace = (cache, latitude, longitude) =>
@@ -226,7 +232,14 @@ const AirFlow = () => {
 
   useEffect(() => {
     if (!air.current || latitude == null) return;
-    writeStorage(CACHE_KEY, { latitude, longitude, nameLoc, weatherLoc, air, updatedAt });
+    writeStorage(CACHE_KEY, {
+      latitude: roundCoordinate(latitude),
+      longitude: roundCoordinate(longitude),
+      nameLoc,
+      weatherLoc,
+      air,
+      updatedAt,
+    });
   }, [latitude, longitude, nameLoc, weatherLoc, air, updatedAt]);
 
 // Handlers -------------------------------------------------------------------------
