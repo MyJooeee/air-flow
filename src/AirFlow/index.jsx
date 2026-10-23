@@ -30,6 +30,15 @@ const PARIS = { latitude: 48.856614, longitude: 2.3522219, name: 'Paris' };
 const EMPTY_AIR = { current: null, history: [], forecast: [], seriesAt: 0 };
 
 const formatTime = (date) => new Date(date).toLocaleTimeString('en-GB'); // HH:mm:ss
+const formatHourMinute = (date) => new Date(date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+// Une cause lisible : le message brut d'OpenWeather est technique et contient une URL
+const describeError = (error) => {
+  if (error.status === 429) return 'too many requests on the shared API key';
+  if (error.status === 401) return 'invalid API key';
+  if (!error.status) return 'network unreachable';
+  return `OpenWeather error ${error.status}`;
+};
 
 const formatDelay = (ms) => {
   const seconds = Math.ceil(ms / 1000);
@@ -91,7 +100,10 @@ const AirFlow = () => {
   const [nameLoc, setNameLoc] = useState(null);
   const [weatherLoc, setWeatherLoc] = useState(null);
   const [air, setAir] = useState(EMPTY_AIR);
-  const [refreshAt, setRefreshAt] = useState(null);
+  // Heure de la dernière mise à jour réussie, pas de la dernière tentative
+  const [updatedAt, setUpdatedAt] = useState(null);
+  // Échec de la dernière actualisation, affiché jusqu'à la suivante : { reason, nextTryAt }
+  const [problem, setProblem] = useState(null);
 
   const { latitude, longitude, name: geolocName } = geoloc ?? {};
   const timeline = useMemo(() => buildTimeline(air), [air]);
@@ -122,10 +134,11 @@ const AirFlow = () => {
     if (latitude == null || longitude == null) return;
 
     const query = `lat=${latitude}&lon=${longitude}&appid=${API_KEY}`;
-    const notify = (message, severity = 'error') => setSnackbar({ open: true, message, severity });
+    const notify = (message, severity = 'info') => setSnackbar({ open: true, message, severity });
     const cache = readStorage(CACHE_KEY);
     // Un cache d'un autre endroit, ou d'un ancien format, est ignoré
     const cached = samePlace(cache, latitude, longitude) && cache.air?.current ? cache : null;
+    const lastFetch = readStorage(LAST_FETCH_KEY) ?? 0;
     let seriesAt = cached?.air?.seriesAt ?? 0;
     let interval = null;
 
@@ -134,6 +147,7 @@ const AirFlow = () => {
     if (cached) {
       setAir(cached.air);
       setWeatherLoc(cached.weatherLoc);
+      setUpdatedAt(cached.updatedAt ?? lastFetch);
     }
 
     // Le nom du lieu ne change pas : demandé une seule fois
@@ -144,7 +158,7 @@ const AirFlow = () => {
     } else {
       fetchApi(`${API_URL}/geo/1.0/reverse?limit=1&${query}`)
         .then((result) => setNameLoc(result[0]?.name ?? 'your location'))
-        .catch((error) => notify(`Location name unavailable (${error.message})`));
+        .catch(() => setNameLoc('your location'));
     }
 
     const refresh = async () => {
@@ -152,9 +166,8 @@ const AirFlow = () => {
       const needSeries = startedAt - seriesAt >= SERIES_DELAY;
       const end = Math.floor(startedAt / 1000);
       writeStorage(LAST_FETCH_KEY, startedAt);
-      setRefreshAt(startedAt);
 
-      const [current, weather, history, forecast] = await Promise.allSettled([
+      const results = await Promise.allSettled([
         fetchApi(`${API_URL}/data/2.5/air_pollution?${query}`),
         fetchApi(`${API_URL}/data/2.5/weather?units=metric&${query}`),
         ...(needSeries ? [
@@ -162,32 +175,30 @@ const AirFlow = () => {
           fetchApi(`${API_URL}/data/2.5/air_pollution/forecast?${query}`),
         ] : []),
       ]);
+      const [current, weather, history, forecast] = results;
 
       if (current.status === 'fulfilled') {
         setAir((prev) => ({ ...prev, current: toPoint(current.value.list[0]) }));
-      } else {
-        notify(`Air quality unavailable (${current.reason.message})`);
+        setUpdatedAt(startedAt);
       }
 
       if (weather.status === 'fulfilled') {
         setWeatherLoc(toWeather(weather.value));
-      } else {
-        notify(`Weather unavailable (${weather.reason.message})`);
       }
 
-      if (needSeries) {
-        if (history.status === 'fulfilled' && forecast.status === 'fulfilled') {
-          seriesAt = startedAt;
-          setAir((prev) => ({
-            ...prev,
-            history: history.value.list.map(toPoint),
-            forecast: forecast.value.list.map(toPoint),
-            seriesAt,
-          }));
-        } else {
-          notify(`History or forecast unavailable (${(history.reason ?? forecast.reason).message})`);
-        }
+      if (needSeries && history.status === 'fulfilled' && forecast.status === 'fulfilled') {
+        seriesAt = startedAt;
+        setAir((prev) => ({
+          ...prev,
+          history: history.value.list.map(toPoint),
+          forecast: forecast.value.list.map(toPoint),
+          seriesAt,
+        }));
       }
+
+      // Un seul message par actualisation, qui reste affiché jusqu'à la suivante
+      const failure = results.find((result) => result.status === 'rejected');
+      setProblem(failure ? { reason: describeError(failure.reason), nextTryAt: startedAt + REFRESH_DELAY } : null);
     };
 
     const startCycle = () => {
@@ -195,7 +206,6 @@ const AirFlow = () => {
       interval = setInterval(refresh, REFRESH_DELAY);
     };
 
-    const lastFetch = readStorage(LAST_FETCH_KEY) ?? 0;
     const elapsed = Date.now() - lastFetch;
 
     if (elapsed >= REFRESH_DELAY) {
@@ -205,7 +215,6 @@ const AirFlow = () => {
 
     // Trop tôt pour rappeler l'API : les dernières données restent affichées,
     // et le cycle reprend quand les 5 minutes sont écoulées
-    if (cached) setRefreshAt(lastFetch);
     notify(`Data from ${formatTime(lastFetch)}. Retry in ${formatDelay(REFRESH_DELAY - elapsed)}.`, 'info');
     const timeout = setTimeout(startCycle, REFRESH_DELAY - elapsed);
 
@@ -217,8 +226,8 @@ const AirFlow = () => {
 
   useEffect(() => {
     if (!air.current || latitude == null) return;
-    writeStorage(CACHE_KEY, { latitude, longitude, nameLoc, weatherLoc, air });
-  }, [latitude, longitude, nameLoc, weatherLoc, air]);
+    writeStorage(CACHE_KEY, { latitude, longitude, nameLoc, weatherLoc, air, updatedAt });
+  }, [latitude, longitude, nameLoc, weatherLoc, air, updatedAt]);
 
 // Handlers -------------------------------------------------------------------------
   const handleClose = () => {
@@ -249,11 +258,18 @@ const AirFlow = () => {
         </Box>
         <Stack sx={topContainer}>
           <Title loading={!nameLoc} name={nameLoc} />
-          <AirQuality loading={!air.current} indexQuality={air.current?.aqi} />
-          <Weather loading={!weatherLoc} weather={weatherLoc} />
+          <AirQuality loading={!air.current && !problem} indexQuality={air.current?.aqi} />
+          {(weatherLoc || !problem) && <Weather loading={!weatherLoc} weather={weatherLoc} />}
           <Leaflet geoloc={geoloc} />
         </Stack>
         <Legend />
+        {problem && (
+          <Alert severity={timeline ? 'info' : 'error'} variant="outlined">
+            {timeline
+              ? `Showing data from ${formatHourMinute(updatedAt)}. OpenWeather did not respond (${problem.reason}); next try at ${formatHourMinute(problem.nextTryAt)}.`
+              : `Air quality data is unavailable right now (${problem.reason}). Next try at ${formatHourMinute(problem.nextTryAt)}.`}
+          </Alert>
+        )}
         <Box sx={cardsGrid}>
           {POLLUTANTS.map((pollutant) => (timeline ? (
             <PollutantCard
@@ -265,13 +281,13 @@ const AirFlow = () => {
               now={timeline.now}
             />
           ) : (
-            <Skeleton key={pollutant.id} variant="rounded" height={268} />
+            !problem && <Skeleton key={pollutant.id} variant="rounded" height={268} />
           )))}
         </Box>
         <Stack sx={{ gap: 2 }}>
           <Typography sx={{ textAlign: 'center' }}>
             <strong> Air Flow </strong> {!isMobile ? 'detects changes in' : ''} air quality
-            (checked at : <strong> {refreshAt ? formatTime(refreshAt) : '–'}</strong>).
+            (updated at : <strong> {updatedAt ? formatTime(updatedAt) : '–'}</strong>).
           </Typography>
           <Typography variant='caption' sx={{ textAlign: 'center' }}>
             © {new Date().getFullYear()} Jonathan Dancette, all rights reserved. | v{version}
